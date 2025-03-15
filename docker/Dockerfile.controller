@@ -1,0 +1,21 @@
+# docker/Dockerfile.controller
+FROM openjdk:11-jdk-slim
+
+# Install Docker CLI
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    && curl -fsSL https://get.docker.com -o get-docker.sh \
+    && sh get-docker.sh \
+    && apt-get clean
+
+WORKDIR /app
+
+# Copy the JAR file
+COPY target/simulator.jar /app/
+
+# Run the simulator
+ENTRYPOINT ["java", "-jar", "simulator.jar"]

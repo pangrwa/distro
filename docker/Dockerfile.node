@@ -1,0 +1,10 @@
+# docker/Dockerfile.node
+FROM openjdk:11-jre-slim
+
+WORKDIR /app
+
+# Copy the JAR file
+COPY target/node-runner.jar /app/
+
+# Run the node program
+ENTRYPOINT ["java", "-jar", "node-runner.jar"]

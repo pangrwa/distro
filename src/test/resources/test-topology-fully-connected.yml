@@ -1,0 +1,5 @@
+topologies:
+  - type: "fully_connected"
+    number_nodes: 4
+    program: "leader_election"
+    nid_prefix: "fc-node-"

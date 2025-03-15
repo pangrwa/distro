@@ -1,0 +1,20 @@
+# docker/docker-compose.yml
+version: '3'
+
+services:
+  controller:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.controller
+    container_name: simulator-controller
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../examples:/examples
+    networks:
+      - simulator-network
+    command: ["/examples/topology.yml"]
+
+networks:
+  simulator-network:
+    name: simulator-network
+    driver: bridge

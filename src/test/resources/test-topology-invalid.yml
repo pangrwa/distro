@@ -1,0 +1,5 @@
+topologies:
+  - type: "invalid_topology_type"
+    number_nodes: 3
+    program: "broadcast_algorithm"
+    nid_prefix: "invalid-node-"
