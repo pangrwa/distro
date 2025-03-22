@@ -1,0 +1,37 @@
+```mermaid
+graph TD
+    subgraph "Host Machine"
+        Client[Client CLI]
+        DockerEngine[Docker Engine]
+        Controller[Controller Container]
+        
+        subgraph "Docker Network"
+            Node1[Node Container 1]
+            Node2[Node Container 2]
+            Node3[Node Container 3]
+            NodeN[Node Container N]
+        end
+    end
+    
+    User[User] --> Client
+    Client --> Controller
+    Controller --> DockerEngine
+    DockerEngine --> Node1
+    DockerEngine --> Node2
+    DockerEngine --> Node3
+    DockerEngine --> NodeN
+    
+    Node1 <--> Node2
+    Node1 <--> Node3
+    Node2 <--> Node3
+    Node2 <--> NodeN
+    Node3 <--> NodeN
+    
+    classDef container fill:#b3e0ff,stroke:#0066cc,stroke-width:2px
+    classDef engine fill:#ffcccc,stroke:#ff6666,stroke-width:2px
+    classDef user fill:#d9f2d9,stroke:#339933,stroke-width:2px
+    
+    class Node1,Node2,Node3,NodeN,Controller container
+    class DockerEngine engine
+    class User,Client user
+```
