@@ -147,6 +147,27 @@ public class DockerManager {
             }
         }
     }
+
+    /*
+     * Take note I think there's a flaw in how the Docker Java Library consumes the response message from the dameon before it actully closes the connection
+     * But the docker command will still get executed correctly and the image will get removed
+     */
+    public void cleanupImages() {
+        // remove all the images that was created
+        try {
+            dockerClient.removeImageCmd("distro/node:latest")
+                .withForce(true)
+                .exec();
+            System.out.println("Removed node image");
+
+            dockerClient.removeImageCmd("distro/controller:latest")
+                .withForce(true)
+                .exec();
+            System.out.println("Removed controller image");
+        } catch (Exception e) {
+            System.out.println("Error removing images: " + e.getMessage());
+        }
+    }
     
     public String getNodeIpAddress(String nodeId) {
         String containerId = nodeContainerIds.get(nodeId);

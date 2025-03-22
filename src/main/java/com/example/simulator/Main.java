@@ -60,10 +60,7 @@ public class Main {
             scanner.close();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (simulator != null) {
-                simulator.shutdown();
-            }
         }
+        // let the shutdown hook handle the shutting down instead
     }
 }

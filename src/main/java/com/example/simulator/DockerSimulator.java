@@ -53,6 +53,7 @@ public class DockerSimulator {
     public void shutdown() {
         System.out.println("Shutting down simulation...");
         dockerManager.cleanupContainers();
+        dockerManager.cleanupImages();
         System.out.println("Simulation shutdown complete");
     }
 
