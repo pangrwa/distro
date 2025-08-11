@@ -8,12 +8,16 @@ import com.example.api.MessageSender;
 import com.example.api.NodeProgram;
 import com.example.api.Storage;
 import com.example.util.Pair;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * A very basic algorithm that simply echoes back any message received
  * and periodically sends a heartbeat to its neighbors.
  */
 public class EchoAlgorithm implements NodeProgram {
+  private static final ObjectMapper objectMapper = new ObjectMapper();
+
   @Override
   public void execute(List<String> peerNids, String myNid,
       MessageSender sender, MessageReceiver receiver,
@@ -44,14 +48,26 @@ public class EchoAlgorithm implements NodeProgram {
           // Try to receive with a 1-second timeout
           Pair<byte[], String> received = receiver.receive();
           String senderNid = received.getRight();
-          String message = new String(received.getLeft(), StandardCharsets.UTF_8);
+          byte[] messageBytes = received.getLeft();
 
-          // Echo it back
-          String echoMessage = "ECHO: " + message;
-          sender.send(echoMessage.getBytes(StandardCharsets.UTF_8), senderNid);
+          // Parse the received JSON message
+          ObjectNode receivedJson = (ObjectNode) objectMapper.readTree(messageBytes);
+          String messageContent = receivedJson.get("content").asText();
+          // String messageType = receivedJson.has("type") ?
+          // receivedJson.get("type").asText() : "unknown";
+
+          // Create JSON echo response
+          ObjectNode echoJson = objectMapper.createObjectNode();
+          // echoJson.put("type", "echo");
+          echoJson.put("content", messageContent);
+          echoJson.put("sequence", receivedJson.get("sequence").asLong() + 1);
+          echoJson.put("timestamp", System.currentTimeMillis());
+
+          String echoJsonString = objectMapper.writeValueAsString(echoJson);
+          sender.send(echoJsonString.getBytes(StandardCharsets.UTF_8), senderNid);
 
           // Also store last message from each sender
-          storage.put("last_from_" + senderNid, message);
+          storage.put("last_from_" + senderNid, messageContent);
 
         } catch (InterruptedException e) {
           // This is fine - just continue the loop
@@ -66,9 +82,38 @@ public class EchoAlgorithm implements NodeProgram {
 
   // Helper method to send heartbeats
   private void sendHeartbeat(String myNid, MessageSender sender, List<String> peerNids, int count) {
-    String heartbeatMsg = "HEARTBEAT-" + count + " from " + myNid;
-    for (String peer : peerNids) {
-      sender.send(heartbeatMsg.getBytes(StandardCharsets.UTF_8), peer);
+    try {
+      ObjectNode heartbeatJson = objectMapper.createObjectNode();
+      // heartbeatJson.put("type", "heartbeat");
+      heartbeatJson.put("content", "HEARTBEAT");
+      heartbeatJson.put("sequence", count);
+      heartbeatJson.put("timestamp", System.currentTimeMillis());
+
+      for (String peer : peerNids) {
+        heartbeatJson.put("sender", myNid);
+        String heartbeatJsonString = objectMapper.writeValueAsString(heartbeatJson);
+        byte[] heartbeatBytes = heartbeatJsonString.getBytes(StandardCharsets.UTF_8);
+        sender.send(heartbeatBytes, peer);
+      }
+    } catch (Exception e) {
+      System.err.println("Error creating heartbeat JSON: " + e.getMessage());
     }
+  }
+
+  @Override
+  public String decodeMessage(byte[] raw_data) {
+    ObjectMapper mapper = new ObjectMapper();
+
+    // Example: raw_data is a UTF-8 JSON string representing a Map
+    try {
+      Object obj = mapper.readValue(raw_data, Object.class); // Parse JSON
+      String jsonStr = mapper.writeValueAsString(obj);
+      String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
+      return jsonStr;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
+
   }
 }

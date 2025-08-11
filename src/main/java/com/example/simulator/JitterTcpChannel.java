@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import com.example.util.AnsiColor;
+import com.example.api.NodeProgram;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +21,16 @@ public class JitterTcpChannel {
   private final long delayMs;
   private final ServerSocket serverSocket;
   private final Map<String, Socket> connections = new ConcurrentHashMap<>();
+  private final NodeProgram nodeProgram;
   private volatile boolean isRunning = true;
 
-  public JitterTcpChannel(String nodeId, double dropRate, long delayMs) throws IOException {
+  public JitterTcpChannel(String nodeId, double dropRate, long delayMs, NodeProgram nodeProgram)
+      throws IOException {
     this.nodeId = nodeId;
     this.dropRate = dropRate; // 0.0 to 1.0 (0% to 100% drop rate)
     this.delayMs = delayMs; // artificial delay in milliseconds
     this.serverSocket = new ServerSocket(TCP_PORT);
+    this.nodeProgram = nodeProgram;
 
     // Start accepting connections in background
     Thread acceptorThread = new Thread(this::acceptConnections);
@@ -56,8 +60,9 @@ public class JitterTcpChannel {
         out.write(message);
         out.flush();
 
+        String formattedMessage = nodeProgram.decodeMessage(message);
         logger.info(nodeId + ": [TCP] " + AnsiColor.colorize("SENT", AnsiColor.YELLOW) + " to " + recipientNodeId + ": "
-            + new String(message, "UTF-8"));
+            + formattedMessage);
       }
     } catch (Exception e) {
       logger.error(nodeId + ": Error sending message to " + recipientNodeId + ": " + e.getMessage());
@@ -146,8 +151,9 @@ public class JitterTcpChannel {
     String clientHost = top.getSenderHostname();
     byte[] buffer = top.getData();
 
+    String formattedMessage = nodeProgram.decodeMessage(buffer);
     logger.info(nodeId + ": [TCP] " + AnsiColor.colorize("RECIEVED", AnsiColor.GREEN) + " from " + clientHost + ": "
-        + new String(buffer, StandardCharsets.UTF_8));
+        + formattedMessage);
     return incomingMessages.take(); // Blocks until a message is available
   }
 

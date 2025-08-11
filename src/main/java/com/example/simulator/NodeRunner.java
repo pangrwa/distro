@@ -40,15 +40,14 @@ public class NodeRunner {
 
     logger.info("Network simulation - Drop rate: " + (dropRate * 100) + "%, Delay: " + delayMs + "ms");
 
-    // Create TCP channel with jitter simulation
-    JitterTcpChannel tcpChannel = new JitterTcpChannel(nodeId, dropRate, delayMs);
-
-    MessageSender sender = createMessageSender(tcpChannel);
-    MessageReceiver receiver = createMessageReceiver(tcpChannel);
-
     NodeProgram program = loadProgram(programName);
 
     Storage storage = new InMemoryStorage();
+
+    // Create TCP channel with jitter simulation
+    JitterTcpChannel tcpChannel = new JitterTcpChannel(nodeId, dropRate, delayMs, program);
+    MessageSender sender = createMessageSender(tcpChannel);
+    MessageReceiver receiver = createMessageReceiver(tcpChannel);
 
     // Establish all "transmitting" connections before starting the algorithm
     tcpChannel.establishConnections(peerNodeIds);
