@@ -1,5 +1,5 @@
 topologies:
   - type: "ring"
     number_nodes: 3
-    program: "echo_algorithm"
+    program: "EchoAlgorithm"
     nid_prefix: "ring-node-"

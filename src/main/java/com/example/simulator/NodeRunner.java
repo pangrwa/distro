@@ -9,13 +9,13 @@ import com.example.api.MessageReceiver;
 import com.example.api.MessageSender;
 import com.example.api.NodeProgram;
 import com.example.api.Storage;
-import com.example.programs.EchoAlgorithm;
 import com.example.util.InMemoryStorage;
 import com.example.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class NodeRunner {
+  private static final String ALGORITHM_PACKAGE = "com.example.programs";
   private static final double DEFAULT_DROP_RATE = 0; // 10% message drop rate
   private static final long DEFAULT_DELAY_MS = 5000; // 50ms network delay
   private static String nodeId;
@@ -57,12 +57,17 @@ public class NodeRunner {
   }
 
   private static NodeProgram loadProgram(String programName) {
-    // maybe we could use reflection
-    switch (programName) {
-      case "echo_algorithm":
-        return new EchoAlgorithm();
-      default:
-        return new EchoAlgorithm();
+    try {
+      String className = ALGORITHM_PACKAGE + "." + programName;
+      Class<?> clazz = Class.forName(className);
+      if (NodeProgram.class.isAssignableFrom(clazz)) {
+        return (NodeProgram) clazz.getDeclaredConstructor().newInstance();
+      } else {
+        throw new IllegalArgumentException("Class " + className + " does not implement NodeProgram");
+      }
+    } catch (Exception e) {
+      logger.error("Failed to load program: " + programName, e);
+      throw new RuntimeException("Could not load program: " + programName, e);
     }
   }
 
