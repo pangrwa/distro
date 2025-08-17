@@ -27,3 +27,12 @@
      - `resume <node-id>` - Resume a paused node
      - `stop <node-id>` - Stop a node
      - `exit` - Exit the simulator
+
+Some useful docker comamnds
+```
+docker logs -f <container-name>: view the logs from terminal instead
+
+docker network ls
+docker network inspect simulator-network
+
+```
