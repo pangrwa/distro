@@ -1,5 +1,5 @@
 topologies:
   - type: "line"
-    number_nodes: 5
+    number_of_nodes: 5
     program: "broadcast_algorithm"
     nid_prefix: "line-node-"

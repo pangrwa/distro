@@ -14,6 +14,7 @@ import com.example.model.NodeConfig;
 import com.example.model.Connection;
 
 public class TopologyManager {
+  private Map<String, Double> networkJitterConfig = new HashMap<>();
   private Map<String, NodeConfig> nodes = new HashMap<>();
   private Set<Connection> connections = new HashSet<>();
   private Map<String, Integer> idTracker = new HashMap<>();
@@ -39,6 +40,10 @@ public class TopologyManager {
       loadIndividualNodes(config);
     }
 
+    if (config.containsKey("network_jitter_config")) {
+      loadNetworkJitter(config);
+    }
+
     establishConnections();
   }
 
@@ -48,7 +53,7 @@ public class TopologyManager {
 
     for (Map<String, Object> topology : topologies) {
       String type = (String) topology.get("type");
-      int numberOfNodes = ((Number) topology.get("number_nodes")).intValue();
+      int numberOfNodes = ((Number) topology.get("number_of_nodes")).intValue();
       String programName = (String) topology.get("program");
       String nidPrefix = (String) topology.get("nid_prefix");
 
@@ -61,7 +66,8 @@ public class TopologyManager {
 
     // Create nodes
     for (int i = 0; i < numberOfNodes; i++) {
-      String nodeId = String.valueOf(idTracker.getOrDefault(nidPrefix, 0) + i);
+      int int_id = idTracker.getOrDefault(nidPrefix, 0) + i;
+      String nodeId = nidPrefix + int_id;
       nodeIds.add(nodeId);
       nodes.put(nodeId, new NodeConfig(nodeId, programName, new ArrayList<>()));
     }
@@ -131,6 +137,20 @@ public class TopologyManager {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  private void loadNetworkJitter(Map<String, Object> config) {
+    Map<String, Object> networkConfig = (Map<String, Object>) config.get("network_jitter_config");
+    for (Map.Entry<String, Object> entry : networkConfig.entrySet()) {
+      String key = entry.getKey();
+      Object value = entry.getValue();
+
+      if (!(value instanceof Number)) {
+        throw new IllegalArgumentException("YAML config - network_jitter_config fields should be a number");
+      }
+      networkJitterConfig.put(key, ((Number) value).doubleValue());
+    }
+  }
+
   /**
    * This method defines each peer nodes within each NodeConfig object
    */
@@ -172,6 +192,10 @@ public class TopologyManager {
 
   public Set<Connection> getConnections() {
     return connections;
+  }
+
+  public Map<String, Double> getNetworkJitterConfig() {
+    return networkJitterConfig;
   }
 
 }

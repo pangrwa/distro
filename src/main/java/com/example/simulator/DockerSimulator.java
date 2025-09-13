@@ -12,8 +12,8 @@ public class DockerSimulator {
   private Map<String, String> nodeContainerIds = new HashMap<>();
 
   public DockerSimulator(String yamlPath) throws Exception {
-    dockerManager = new DockerManager();
     topologyManager = new TopologyManager(yamlPath);
+    dockerManager = new DockerManager(topologyManager.getNetworkJitterConfig());
 
     System.out.println("Initialised simulator with topology from: " + yamlPath);
   }
