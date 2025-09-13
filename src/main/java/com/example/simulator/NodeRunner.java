@@ -36,7 +36,7 @@ public class NodeRunner {
 
     // Get jitter configuration from environment variables
     double dropRate = parseDoubleFromEnv("DROP_RATE", DEFAULT_DROP_RATE);
-    long delayMs = parseLongFromEnv("DELAY_MS", DEFAULT_DELAY_MS);
+    long delayMs = (long) parseDoubleFromEnv("DELAY_MS", DEFAULT_DELAY_MS);
 
     logger.info("Network simulation - Drop rate: " + (dropRate * 100) + "%, Delay: " + delayMs + "ms");
 

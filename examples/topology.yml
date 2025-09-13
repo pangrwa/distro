@@ -1,5 +1,8 @@
 topologies:
-  - type: "ring"
-    number_nodes: 3
-    program: "EchoAlgorithm"
-    nid_prefix: "ring-node-"
+  - type: ring
+    number_of_nodes: 3
+    program: EchoAlgorithm
+    nid_prefix: ring-node-
+network_jitter_config:
+  drop_rate: 0.03
+  delay_ms: 5000

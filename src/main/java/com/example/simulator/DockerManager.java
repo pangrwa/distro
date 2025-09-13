@@ -20,6 +20,7 @@ public class DockerManager {
   private DockerClient dockerClient;
   private String networkId;
   private Map<String, String> nodeContainerIds = new HashMap<>();
+  private Map<String, Double> networkJitterConfig = new HashMap<>();
   private final String networkName = "simulator-network";
 
   /**
@@ -32,8 +33,9 @@ public class DockerManager {
     initializeNetwork();
   }
 
-  public DockerManager() {
+  public DockerManager(Map<String, Double> networkJitterConfig) {
     DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
+    this.networkJitterConfig = networkJitterConfig;
 
     DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
         .dockerHost(config.getDockerHost())
@@ -80,6 +82,13 @@ public class DockerManager {
       env.add("NODE_ID=" + nodeId);
       env.add("PROGRAM_NAME=" + programName);
       env.add("PEER_NODES=" + String.join(",", peerNodeIds));
+
+      if (networkJitterConfig.containsKey("drop_rate")) {
+        env.add("DROP_RATE=" + String.valueOf(networkJitterConfig.get("drop_rate")));
+      }
+      if (networkJitterConfig.containsKey("delay_ms")) {
+        env.add("DELAY_MS=" + String.valueOf(networkJitterConfig.get("delay_ms")));
+      }
 
       // Create container
       CreateContainerResponse container = dockerClient.createContainerCmd("distro/node:latest")

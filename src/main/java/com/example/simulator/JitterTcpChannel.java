@@ -42,7 +42,8 @@ public class JitterTcpChannel {
     try {
       // Simulate message dropping
       if (shouldDropMessage()) {
-        logger.info(nodeId + ": [JITTER] Dropping message to " + recipientNodeId);
+        logger.info(
+            nodeId + ": [JITTER] " + AnsiColor.colorize("DROPPING", AnsiColor.RED) + " message to " + recipientNodeId);
         return;
       }
 
@@ -141,20 +142,18 @@ public class JitterTcpChannel {
   }
 
   public MessageData getNextMessage() throws InterruptedException {
+    MessageData messageData = incomingMessages.take(); // Blocks until a message is available
 
     // Simulate network delay
     if (delayMs > 0) {
       Thread.sleep(delayMs);
     }
 
-    MessageData top = incomingMessages.peek();
-    String clientHost = top.getSenderHostname();
-    byte[] buffer = top.getData();
-
-    String formattedMessage = nodeProgram.decodeMessage(buffer);
-    logger.info(nodeId + ": [TCP] " + AnsiColor.colorize("RECIEVED", AnsiColor.GREEN) + " from " + clientHost + ": "
+    String formattedMessage = nodeProgram.decodeMessage(messageData.getData());
+    logger.info(nodeId + ": [TCP] " + AnsiColor.colorize("RECIEVED", AnsiColor.GREEN) + " from "
+        + messageData.getSenderHostname() + ": "
         + formattedMessage);
-    return incomingMessages.take(); // Blocks until a message is available
+    return messageData;
   }
 
   public void establishConnections(java.util.List<String> peerNodeIds) throws IOException {

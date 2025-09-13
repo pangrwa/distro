@@ -1,17 +1,17 @@
 topologies:
   - type: "ring"
-    number_nodes: 3
-    program: "broadcast_algorithm"
+    number_of_nodes: 3
+    program: "BroadcastAlgorithm"
     nid_prefix: "ring-node-"
   
   - type: "fully_connected"
-    number_nodes: 2
-    program: "leader_election"
+    number_of_nodes: 2
+    program: "LeaderElection"
     nid_prefix: "fc-node-"
 
 individual_nodes:
   - nid: "coordinator"
-    program: "consensus_algorithm"
+    program: "ConsensusAlgorithm"
     connections:
       - "ring-node-0"
       - "fc-node-0"
