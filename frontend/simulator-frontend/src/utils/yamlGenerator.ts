@@ -8,7 +8,10 @@ import {
 } from "../types/topology";
 import { detectComponentTopology, findConnectedComponents } from "./graphUtils";
 
-export const generateYamlFromNodes = (nodes: NodeData[]): string => {
+export const generateYaml = (
+  nodes: NodeData[],
+  jitterConfig: JitterConfig,
+): string => {
   let config: YamlConfig = {};
 
   const components: NodeData[][] = findConnectedComponents(nodes);
@@ -21,9 +24,9 @@ export const generateYamlFromNodes = (nodes: NodeData[]): string => {
           ...(config.topologies ?? []),
           {
             type: topology as TopologyConfig["type"],
-            numberOfNodes: component.length,
+            number_of_nodes: component.length,
             program: component[0].program,
-            nidPrefix: topology + "-node-",
+            nid_prefix: topology + "-node-",
           },
         ],
       };
@@ -42,10 +45,18 @@ export const generateYamlFromNodes = (nodes: NodeData[]): string => {
     }
   });
 
+  config = {
+    ...config,
+    network_jitter_config: jitterConfig,
+  };
   return dump(config, { indent: 2 });
 };
 
-export const parseYamlToNodes = (yamlContent: string): NodeData[] => {
+export const parseYaml = (
+  yamlContent: string,
+  setNodes: (nodes: NodeData[]) => void,
+  setJitterConfig: (config: JitterConfig) => void,
+): void => {
   try {
     const parsed = require("js-yaml").load(yamlContent) as YamlConfig;
     const nodes: NodeData[] = [];
@@ -56,8 +67,8 @@ export const parseYamlToNodes = (yamlContent: string): NodeData[] => {
         const nodeIds: string[] = [];
 
         // Generate node IDs
-        for (let i = 0; i < (topology.numberOfNodes || 0); i++) {
-          nodeIds.push(`${topology.nidPrefix}${i}`);
+        for (let i = 0; i < (topology.number_of_nodes || 0); i++) {
+          nodeIds.push(`${topology.nid_prefix}${i}`);
         }
 
         // Create nodes
@@ -110,10 +121,16 @@ export const parseYamlToNodes = (yamlContent: string): NodeData[] => {
       });
     }
 
-    return nodes;
+    // handle jitter configs
+    if (parsed.network_jitter_config) {
+      setJitterConfig(parsed.network_jitter_config);
+    }
+
+    if (nodes.length > 0) {
+      setNodes(nodes);
+    }
   } catch (error) {
     console.error("Failed to parse YAML:", error);
-    return [];
   }
 };
 
@@ -133,7 +150,6 @@ export const downloadYaml = (
 };
 
 export const generateJitterEnvVars = (config: JitterConfig): string => {
-  return `DROP_RATE=${config.dropRate}
-DELAY_MS=${config.delayMs}`;
+  return `DROP_RATE=${config.drop_rate}
+DELAY_MS=${config.delay_ms}`;
 };
-

@@ -10,7 +10,7 @@ interface CustomNodeData {
 }
 
 const CustomNode: React.FC<NodeProps<CustomNodeData>> = ({ data, id }) => {
-  const programs = ['echo_algorithm', 'broadcast_algorithm', 'leader_election', 'consensus_algorithm'];
+  const programs = ['EchoAlgorithm', 'broadcast_algorithm', 'leader_election', 'consensus_algorithm'];
 
   return (
     <div style={{

@@ -23,11 +23,11 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
   const [errorMessage, setErrorMessage] = useState("");
   const [topologyConfig, setTopologyConfig] = useState<TopologyConfig>({
     type: "ring",
-    numberOfNodes: 3,
-    program: "echo_algorithm",
-    nidPrefix: "ring-node-",
+    number_of_nodes: 3,
+    program: "EchoAlgorithm",
+    nid_prefix: "ring-node-",
   });
-  
+
   // Keep track of next node counter for each topology type
   const [nodeCounters, setNodeCounters] = useState<Record<string, number>>({
     ring: 0,
@@ -37,20 +37,20 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
 
   const addNode = () => {
     setErrorMessage(""); // Clear previous error
-    
+
     if (!newNodeId.trim()) {
       setErrorMessage("Node ID cannot be empty");
       return;
     }
-    
+
     if (nodes.some((n) => n.id === newNodeId)) {
       setErrorMessage(`Node ID "${newNodeId}" already exists`);
       return;
     }
-    
+
     const newNode: NodeData = {
       id: newNodeId,
-      program: "echo_algorithm",
+      program: "EchoAlgorithm",
       connections: [],
     };
     onNodesChange([...nodes, newNode]);
@@ -72,18 +72,18 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
     const nodeIds: string[] = [];
 
     // Generate unique node IDs starting from the current counter
-    for (let i = 0; i < (topologyConfig.numberOfNodes || 0); i++) {
+    for (let i = 0; i < (topologyConfig.number_of_nodes || 0); i++) {
       let newId = `${topologyConfig.type}-node-${currentCounter + i}`;
-      
+
       // Ensure the ID is truly unique across all existing nodes
-      while (nodes.some(n => n.id === newId)) {
-        setNodeCounters(prev => ({
+      while (nodes.some((n) => n.id === newId)) {
+        setNodeCounters((prev) => ({
           ...prev,
-          [topologyConfig.type]: prev[topologyConfig.type] + 1
+          [topologyConfig.type]: prev[topologyConfig.type] + 1,
         }));
         newId = `${topologyConfig.type}-node-${currentCounter + i + 1}`;
       }
-      
+
       nodeIds.push(newId);
     }
 
@@ -124,7 +124,8 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
     // Update the counter for this topology type
     setNodeCounters({
       ...nodeCounters,
-      [topologyConfig.type]: currentCounter + (topologyConfig.numberOfNodes || 0)
+      [topologyConfig.type]:
+        currentCounter + (topologyConfig.number_of_nodes || 0),
     });
 
     // Append to existing nodes instead of replacing
@@ -162,7 +163,7 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
                 setTopologyConfig({
                   ...topologyConfig,
                   type: newType,
-                  nidPrefix: `${newType}-node-`,
+                  nid_prefix: `${newType}-node-`,
                 });
               }}
             >
@@ -176,11 +177,11 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
             <label>Nodes:</label>
             <input
               type="number"
-              value={topologyConfig.numberOfNodes}
+              value={topologyConfig.number_of_nodes}
               onChange={(e) =>
                 setTopologyConfig({
                   ...topologyConfig,
-                  numberOfNodes: parseInt(e.target.value),
+                  number_of_nodes: parseInt(e.target.value),
                 })
               }
               min="2"
@@ -199,7 +200,7 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
                 })
               }
             >
-              <option value="echo_algorithm">Echo Algorithm</option>
+              <option value="EchoAlgorithm">Echo Algorithm</option>
               <option value="broadcast_algorithm">Broadcast Algorithm</option>
               <option value="leader_election">Leader Election</option>
               <option value="consensus_algorithm">Consensus Algorithm</option>
@@ -210,11 +211,11 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
             <label>Prefix:</label>
             <input
               type="text"
-              value={topologyConfig.nidPrefix}
+              value={topologyConfig.nid_prefix}
               onChange={(e) =>
                 setTopologyConfig({
                   ...topologyConfig,
-                  nidPrefix: e.target.value,
+                  nid_prefix: e.target.value,
                 })
               }
             />
@@ -267,11 +268,13 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
             </button>
           </div>
           {errorMessage && (
-            <div style={{ 
-              color: "#ff4444", 
-              fontSize: "14px", 
-              fontWeight: "bold" 
-            }}>
+            <div
+              style={{
+                color: "#ff4444",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
               {errorMessage}
             </div>
           )}
@@ -286,11 +289,11 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
             <label>Drop Rate (%):</label>
             <input
               type="number"
-              value={jitterConfig.dropRate * 100}
+              value={jitterConfig.drop_rate * 100}
               onChange={(e) =>
                 onJitterConfigChange({
                   ...jitterConfig,
-                  dropRate: parseFloat(e.target.value) / 100,
+                  drop_rate: parseFloat(e.target.value) / 100,
                 })
               }
               min="0"
@@ -303,11 +306,11 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
             <label>Delay (ms):</label>
             <input
               type="number"
-              value={jitterConfig.delayMs}
+              value={jitterConfig.delay_ms}
               onChange={(e) =>
                 onJitterConfigChange({
                   ...jitterConfig,
-                  delayMs: parseInt(e.target.value),
+                  delay_ms: parseInt(e.target.value),
                 })
               }
               min="0"
@@ -354,6 +357,7 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
         </label>
       </div>
 
+      {/*
       <div style={{ marginTop: "20px" }}>
         <p>
           <strong>Current Nodes:</strong> {nodes.length}
@@ -363,9 +367,9 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
           {nodes.reduce((sum, node) => sum + node.connections.length, 0) / 2}
         </p>
       </div>
+      */}
     </div>
   );
 };
 
 export default TopologyPanel;
-

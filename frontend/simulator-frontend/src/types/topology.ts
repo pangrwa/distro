@@ -5,10 +5,10 @@ export interface NodeData {
 }
 
 export interface TopologyConfig {
-  type: 'ring' | 'line' | 'fully_connected' | 'custom';
-  numberOfNodes?: number;
+  type: "ring" | "line" | "fully_connected" | "custom";
+  number_of_nodes?: number;
   program: string;
-  nidPrefix?: string;
+  nid_prefix?: string;
 }
 
 export interface IndividualNode {
@@ -17,17 +17,18 @@ export interface IndividualNode {
   connections: string[];
 }
 
+export interface JitterConfig {
+  drop_rate: number; // 0.0 to 1.0
+  delay_ms: number; // milliseconds
+}
+
 export interface YamlConfig {
   topologies?: TopologyConfig[];
   individual_nodes?: IndividualNode[];
+  network_jitter_config?: JitterConfig;
 }
 
-export interface JitterConfig {
-  dropRate: number; // 0.0 to 1.0
-  delayMs: number;  // milliseconds
-}
-
-export interface SimulationConfig {
-  topology: YamlConfig;
-  jitter: JitterConfig;
-}
+// export interface SimulationConfig {
+//   topology: YamlConfig;
+//   jitter: JitterConfig;
+// }

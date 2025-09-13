@@ -5,8 +5,8 @@ import TopologyPanel from "./components/TopologyPanel";
 import SimulationRunner from "./components/SimulationRunner";
 import { NodeData, JitterConfig } from "./types/topology";
 import {
-  generateYamlFromNodes,
-  parseYamlToNodes,
+  generateYaml,
+  parseYaml,
   downloadYaml,
   generateJitterEnvVars,
 } from "./utils/yamlGenerator";
@@ -15,39 +15,36 @@ function App() {
   const [nodes, setNodes] = useState<NodeData[]>([
     {
       id: "node-0",
-      program: "echo_algorithm",
+      program: "EchoAlgorithm",
       connections: ["node-1"],
     },
     {
       id: "node-1",
-      program: "echo_algorithm",
+      program: "EchoAlgorithm",
       connections: ["node-0", "node-2"],
     },
     {
       id: "node-2",
-      program: "echo_algorithm",
+      program: "EchoAlgorithm",
       connections: ["node-1"],
     },
   ]);
 
   const [jitterConfig, setJitterConfig] = useState<JitterConfig>({
-    dropRate: 0.0,
-    delayMs: 5000,
+    drop_rate: 0.0,
+    delay_ms: 5000,
   });
 
   const [yamlOutput, setYamlOutput] = useState<string>("");
 
   const handleGenerateYaml = () => {
-    const yamlContent = generateYamlFromNodes(nodes);
+    let yamlContent = generateYaml(nodes, jitterConfig);
     setYamlOutput(yamlContent);
     downloadYaml(yamlContent);
   };
 
   const handleLoadYaml = (yamlContent: string) => {
-    const parsedNodes = parseYamlToNodes(yamlContent);
-    if (parsedNodes.length > 0) {
-      setNodes(parsedNodes);
-    }
+    parseYaml(yamlContent, setNodes, setJitterConfig);
   };
 
   return (
@@ -83,7 +80,7 @@ function App() {
             onLoadYaml={handleLoadYaml}
           />
 
-          <SimulationRunner nodes={nodes} jitterConfig={jitterConfig} />
+          {/*<SimulationRunner nodes={nodes} jitterConfig={jitterConfig} />*/}
         </div>
 
         {/* Right Panel - Visualization */}
@@ -98,6 +95,7 @@ function App() {
           <h3>Network Topology Visualization</h3>
           <NetworkVisualization nodes={nodes} onNodesChange={setNodes} />
 
+          {/*
           {yamlOutput && (
             <div style={{ marginTop: "20px" }}>
               <h4>Generated YAML Configuration:</h4>
@@ -115,6 +113,7 @@ function App() {
               </pre>
             </div>
           )}
+          */}
         </div>
       </div>
     </div>
