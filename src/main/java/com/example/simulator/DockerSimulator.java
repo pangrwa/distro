@@ -23,6 +23,9 @@ public class DockerSimulator {
 
     System.out.println("Starting simulation with " + nodes.size() + " nodes");
 
+    // create docker container for MessageMonitorService
+    dockerManager.createMessageMonitorServiceContainer();
+
     // create docker containers for each of these nodes
     for (Map.Entry<String, NodeConfig> entry : nodes.entrySet()) {
       String nodeId = entry.getKey();

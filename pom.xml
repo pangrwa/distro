@@ -52,6 +52,52 @@
         <version>1.2.11</version>
     </dependency>
 
+
+
+        <!-- Jetty Server -->
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>11.0.20</version>
+    </dependency>
+
+    <!-- Jetty Servlet support -->
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-servlet</artifactId>
+        <version>11.0.20</version>
+    </dependency>
+
+    <!-- Jetty WebSocket server -->
+    <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-jetty-server</artifactId>
+        <version>11.0.20</version>
+    </dependency>
+
+    <!-- Jetty WebSocket API -->
+    <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-servlet</artifactId>
+        <version>11.0.20</version>
+    </dependency>
+
+    <!-- Servlet API (provided by Jetty at runtime usually) -->
+    <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>5.0.0</version>
+        <scope>provided</scope>
+    </dependency>
+
+    <!-- Jackson (for JSON parsing) -->
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.17.2</version>
+    </dependency>
+
+
     <!-- Testing dependencies -->
     <dependency>
       <groupId>junit</groupId>
@@ -161,6 +207,27 @@
                           <descriptorRef>jar-with-dependencies</descriptorRef>
                       </descriptorRefs>
                       <finalName>node-runner</finalName>
+                      <appendAssemblyId>false</appendAssemblyId>
+                  </configuration>
+              </execution>
+
+              <!-- Message Monitor JAR -->
+              <execution>
+                  <id>message-monitor</id>
+                  <phase>package</phase>
+                  <goals>
+                      <goal>single</goal>
+                  </goals>
+                  <configuration>
+                      <archive>
+                          <manifest>
+                              <mainClass>com.example.simulator.MessageMonitorService</mainClass>
+                          </manifest>
+                      </archive>
+                      <descriptorRefs>
+                          <descriptorRef>jar-with-dependencies</descriptorRef>
+                      </descriptorRefs>
+                      <finalName>message-monitor</finalName>
                       <appendAssemblyId>false</appendAssemblyId>
                   </configuration>
               </execution>

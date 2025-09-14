@@ -1,0 +1,10 @@
+# docker/Dockerfile.message-monitor
+FROM openjdk:11-jre-slim
+
+WORKDIR /app
+
+# Copy the JAR file
+COPY target/message-monitor.jar /app/
+
+# Run the node program
+ENTRYPOINT ["java", "-jar", "message-monitor.jar"]

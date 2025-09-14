@@ -21,6 +21,7 @@ public class NodeRunner {
   private static String nodeId;
 
   private static final Logger logger = LoggerFactory.getLogger(NodeRunner.class);
+  private static MessageReporter reporter;
 
   public static void main(String[] args) throws Exception {
     // Get configuration from environment variables, these would have been set from
@@ -28,6 +29,7 @@ public class NodeRunner {
     nodeId = System.getenv("NODE_ID");
     String programName = System.getenv("PROGRAM_NAME");
     String peerNodesStr = System.getenv("PEER_NODES");
+    String monitorEndpoint = System.getenv("MONITOR_ENDPOINT");
 
     List<String> peerNodeIds = Arrays.asList(peerNodesStr.split(","));
 
@@ -44,6 +46,13 @@ public class NodeRunner {
 
     Storage storage = new InMemoryStorage();
 
+    logger.info("MonitorEndpoint: {}", monitorEndpoint);
+    // Initialise Message Reporter
+    if (monitorEndpoint != null) {
+      logger.info("MonitorEndpoint: {}", monitorEndpoint);
+      reporter = new MessageReporter(nodeId, monitorEndpoint, "8090");
+    }
+
     // Create TCP channel with jitter simulation
     JitterTcpChannel tcpChannel = new JitterTcpChannel(nodeId, dropRate, delayMs, program);
     MessageSender sender = createMessageSender(tcpChannel);
@@ -54,6 +63,12 @@ public class NodeRunner {
 
     program.execute(peerNodeIds, nodeId, sender, receiver, storage);
 
+    // Add shutdown Hook
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      if (reporter != null) {
+        reporter.shutdown();
+      }
+    }));
   }
 
   private static NodeProgram loadProgram(String programName) {
@@ -73,6 +88,13 @@ public class NodeRunner {
 
   private static MessageSender createMessageSender(JitterTcpChannel tcpChannel) {
     return (message, recipientNid) -> {
+      // Doesn't matter if the message is dropped, from this node's perspective, the
+      // message has left
+      // I put this before sending message because it's important that the monitor
+      // process this message before the other container process the receiving message
+      if (reporter != null) {
+        reporter.reportMessageSent(recipientNid, message, System.currentTimeMillis());
+      }
       tcpChannel.sendMessage(message, recipientNid);
     };
   }
@@ -81,6 +103,10 @@ public class NodeRunner {
     return () -> {
       try {
         JitterTcpChannel.MessageData messageData = tcpChannel.getNextMessage();
+        if (reporter != null) {
+          reporter.reportMessageReceived(messageData.getSenderHostname(), messageData.getData(),
+              System.currentTimeMillis());
+        }
         return new Pair<byte[], String>(messageData.getData(), messageData.getSenderHostname());
       } catch (Exception e) {
         logger.error("Error receiving message: " + e.getMessage());
