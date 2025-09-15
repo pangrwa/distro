@@ -5,16 +5,37 @@ import java.util.Scanner;
 public class Main {
   public static void main(String[] args) {
     if (args.length < 1) {
-      System.err.println("Usage: java -jar simulator.jar <topology-file>");
+      System.err.println("Usage: java -jar simulator.jar <topology-file> [mode]");
+      System.err.println("  <topology-file> : path to your topology YAML file (required)");
+      System.err.println("  [mode]          : optional, either 'default' or 'server' (default='default')");
       System.exit(1);
     }
 
     String topologyFile = args[0];
+
+    Boolean isDefault = true;
+    if (args.length >= 2) {
+      String mode = args[1];
+      System.out.println(mode);
+      if (!mode.equals("default") && !mode.equals("server")) {
+        System.err.println("  [mode]          : optional, either 'default' or 'server' (default='default')");
+        System.exit(1);
+      } else if (mode.equals("server")) {
+        isDefault = false;
+      }
+    }
+
+    if (isDefault) {
+      System.out.println("Running on default mode - CLI MODE");
+    } else {
+      System.out.println("Running on server mode - server started this simulation");
+    }
+
     DockerSimulator simulator = null;
 
     try {
       // Create and start simulator
-      simulator = new DockerSimulator(topologyFile);
+      simulator = new DockerSimulator(topologyFile, isDefault);
       simulator.startSimulation();
 
       // Add the option to cancel by ctr-c

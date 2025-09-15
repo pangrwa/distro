@@ -46,11 +46,10 @@ public class NodeRunner {
 
     Storage storage = new InMemoryStorage();
 
-    logger.info("MonitorEndpoint: {}", monitorEndpoint);
     // Initialise Message Reporter
     if (monitorEndpoint != null) {
       logger.info("MonitorEndpoint: {}", monitorEndpoint);
-      reporter = new MessageReporter(nodeId, monitorEndpoint, "8090");
+      reporter = new MessageReporter(nodeId, monitorEndpoint, "8080");
     }
 
     // Create TCP channel with jitter simulation
