@@ -25,6 +25,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
   const [simulationStatus, setSimulationStatus] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const idRef = useRef(0);
 
@@ -75,6 +76,11 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
     idRef.current += 1;
     setMessages((prev) => [...prev, message]);
   };
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const clearMessages = () => {
     setMessages([]);
@@ -140,6 +146,14 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
         setIsSimulationRunning(false);
         setSimulationStatus("Simulation stopped");
         addMessage(`Simulation stopped: ${result}`);
+
+        // Close WebSocket connection
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+          setIsConnected(false);
+          addMessage("WebSocket connection closed");
+        }
       } else {
         setSimulationStatus("Failed to stop simulation");
         addMessage(`Error stopping simulation: ${result}`);
@@ -328,8 +342,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 
           <div
             style={{
-              flex: 1,
-              minHeight: "200px",
+              height: "300px",
               overflowY: "auto",
               border: "1px solid #ddd",
               borderRadius: "4px",
@@ -371,6 +384,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
                 </div>
               ))
             )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
       </div>
