@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import SimulationMonitor from "../components/SimulationMonitor";
+import TopologyDisplay from "../components/TopologyDisplay";
 import { NodeData, JitterConfig } from "../types/topology";
 
 const SimulationRunner: React.FC = () => {
@@ -110,69 +111,61 @@ const SimulationRunner: React.FC = () => {
           </div>
         </div>
 
-        {/* Current Topology Summary */}
+        {/* Main Content Layout */}
         {topologyLoaded ? (
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "20px",
-              background: "white",
-              borderRadius: "8px",
-              border: "1px solid #ddd",
-            }}
-          >
-            <h3>Current Topology Configuration</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "15px" }}>
-              <div>
-                <h4 style={{ marginBottom: "10px", color: "#333" }}>Network Nodes</h4>
-                <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "4px" }}>
-                  {nodes.length > 0 ? (
-                    <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                      {nodes.map((node) => (
-                        <li key={node.id} style={{ marginBottom: "5px", fontSize: "14px" }}>
-                          <strong>{node.id}</strong> ({node.program})
-                          {node.connections.length > 0 && (
-                            <span style={{ color: "#666" }}>
-                              → connects to {node.connections.join(", ")}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div style={{ fontStyle: "italic", color: "#666" }}>No nodes configured</div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ marginBottom: "10px", color: "#333" }}>Jitter Configuration</h4>
-                <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "4px" }}>
-                  <div style={{ fontSize: "14px", marginBottom: "8px" }}>
-                    <strong>Drop Rate:</strong> {(jitterConfig.drop_rate * 100).toFixed(1)}%
-                  </div>
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Delay:</strong> {jitterConfig.delay_ms}ms
-                  </div>
-                </div>
-              </div>
+          <div style={{ display: "flex", gap: "20px", height: "calc(100vh - 200px)" }}>
+            {/* Left Panel - Simulation Monitor */}
+            <div style={{ width: "400px", overflow: "auto" }}>
+              <SimulationMonitor nodes={nodes} jitterConfig={jitterConfig} />
             </div>
 
-            <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
-              <button
-                onClick={clearTopology}
-                style={{
-                  padding: "8px 12px",
-                  background: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
-                Clear Configuration
-              </button>
+            {/* Right Panel - Topology Visualization */}
+            <div
+              style={{
+                flex: 1,
+                background: "white",
+                borderRadius: "8px",
+                border: "1px solid #ddd",
+                padding: "20px",
+                overflow: "auto",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h3>Current Topology Visualization</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                  <div style={{ fontSize: "14px", color: "#666" }}>
+                    Nodes: {nodes.length} | Connections: {nodes.reduce((acc, node) => acc + node.connections.length, 0) / 2}
+                  </div>
+                  <button
+                    onClick={clearTopology}
+                    style={{
+                      padding: "8px 12px",
+                      background: "#dc3545",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Clear Configuration
+                  </button>
+                </div>
+              </div>
+
+              {/* Topology Display */}
+              <div style={{ height: "calc(100% - 80px)", minHeight: "400px" }}>
+                <TopologyDisplay nodes={nodes} />
+              </div>
+
+              {/* Configuration Summary */}
+              <div style={{ marginTop: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "4px" }}>
+                <h4 style={{ marginBottom: "10px", color: "#333" }}>Jitter Configuration</h4>
+                <div style={{ display: "flex", gap: "20px", fontSize: "14px" }}>
+                  <div><strong>Drop Rate:</strong> {(jitterConfig.drop_rate * 100).toFixed(1)}%</div>
+                  <div><strong>Delay:</strong> {jitterConfig.delay_ms}ms</div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -210,17 +203,6 @@ const SimulationRunner: React.FC = () => {
             </Link>
           </div>
         )}
-
-        {/* Simulation Monitor */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: "8px",
-            border: "1px solid #ddd",
-          }}
-        >
-          <SimulationMonitor nodes={nodes} jitterConfig={jitterConfig} />
-        </div>
       </div>
     </div>
   );

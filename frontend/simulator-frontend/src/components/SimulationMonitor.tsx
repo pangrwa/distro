@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Play, Square, Wifi, WifiOff, Upload, Trash2 } from "lucide-react";
+import { Play, Square, Wifi, WifiOff, Trash2 } from "lucide-react";
 import { NodeData, JitterConfig } from "../types/topology";
 import { generateYaml } from "../utils/yamlGenerator";
+import TopologyDisplay from "./TopologyDisplay";
 
 interface SimulationMonitorProps {
   nodes: NodeData[];
@@ -24,9 +25,8 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
   const [simulationStatus, setSimulationStatus] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  let id = 0;
+  const idRef = useRef(0);
 
   // Connect to WebSocket
   useEffect(() => {
@@ -68,11 +68,11 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 
   const addMessage = (content: string) => {
     const message: Message = {
-      id: id.toString(),
+      id: idRef.current.toString(),
       timestamp: new Date().toLocaleTimeString(),
       content,
     };
-    id += 1;
+    idRef.current += 1;
     setMessages((prev) => [...prev, message]);
   };
 
@@ -152,189 +152,226 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 
   return (
     <div
-      style={{ padding: "20px", background: "#f9f9f9", borderRadius: "8px" }}
+      style={{
+        background: "white",
+        borderRadius: "8px",
+        border: "1px solid #ddd",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
-      <h3>Simulation Monitor</h3>
-
-      {/* Connection Status */}
-      <div style={{ marginBottom: "20px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "10px",
-            borderRadius: "4px",
-            background: isConnected ? "#d4edda" : "#f8d7da",
-            border: `1px solid ${isConnected ? "#c3e6cb" : "#f5c6cb"}`,
-            color: isConnected ? "#155724" : "#721c24",
-          }}
-        >
-          {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
-          WebSocket: {isConnected ? "Connected" : "Disconnected"}
-        </div>
+      {/* Header */}
+      <div style={{ padding: "15px", borderBottom: "1px solid #eee" }}>
+        <h3 style={{ margin: 0, fontSize: "18px" }}>Simulation Monitor</h3>
       </div>
 
-      {/* Simulation Controls */}
-      <div style={{ marginBottom: "20px" }}>
-        <h4>Simulation Controls</h4>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-          <button
-            onClick={startSimulation}
-            disabled={!isConnected || isSimulationRunning}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "10px 15px",
-              background:
-                !isConnected || isSimulationRunning ? "#ccc" : "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor:
-                !isConnected || isSimulationRunning ? "not-allowed" : "pointer",
-            }}
-          >
-            <Play size={16} />
-            Start Simulation
-          </button>
-
-          <button
-            onClick={stopSimulation}
-            disabled={!isConnected || !isSimulationRunning}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "10px 15px",
-              background:
-                !isConnected || !isSimulationRunning ? "#ccc" : "#dc3545",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor:
-                !isConnected || !isSimulationRunning
-                  ? "not-allowed"
-                  : "pointer",
-            }}
-          >
-            <Square size={16} />
-            Stop Simulation
-          </button>
+      <div style={{ flex: 1, padding: "15px", overflow: "auto" }}>
+        {/* Current Topology */}
+        {/*
+        <div style={{ marginBottom: "20px" }}>
+          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#666" }}>Current Topology</h4>
+          <div style={{ height: "200px" }}>
+            <TopologyDisplay nodes={nodes} />
+          </div>
         </div>
+        */}
 
-        {simulationStatus && (
+        {/* Connection Status */}
+        <div style={{ marginBottom: "20px" }}>
           <div
             style={{
-              padding: "10px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px",
               borderRadius: "4px",
-              background:
-                simulationStatus.includes("Error") ||
-                simulationStatus.includes("Failed")
-                  ? "#f8d7da"
-                  : simulationStatus.includes("successfully") ||
-                      simulationStatus.includes("stopped")
-                    ? "#d4edda"
-                    : "#fff3cd",
-              border: `1px solid ${
-                simulationStatus.includes("Error") ||
-                simulationStatus.includes("Failed")
-                  ? "#f5c6cb"
-                  : simulationStatus.includes("successfully") ||
-                      simulationStatus.includes("stopped")
-                    ? "#c3e6cb"
-                    : "#ffeaa7"
-              }`,
-              color:
-                simulationStatus.includes("Error") ||
-                simulationStatus.includes("Failed")
-                  ? "#721c24"
-                  : simulationStatus.includes("successfully") ||
-                      simulationStatus.includes("stopped")
-                    ? "#155724"
-                    : "#856404",
+              background: isConnected ? "#d4edda" : "#f8d7da",
+              border: `1px solid ${isConnected ? "#c3e6cb" : "#f5c6cb"}`,
+              color: isConnected ? "#155724" : "#721c24",
               fontSize: "14px",
             }}
           >
-            {simulationStatus}
+            {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
+            WebSocket: {isConnected ? "Connected" : "Disconnected"}
           </div>
-        )}
-      </div>
-
-      {/* Messages */}
-      <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "10px",
-          }}
-        >
-          <h4>Messages</h4>
-          <button
-            onClick={clearMessages}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "6px 10px",
-              background: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "12px",
-            }}
-          >
-            <Trash2 size={12} />
-            Clear
-          </button>
         </div>
 
-        <div
-          style={{
-            height: "300px",
-            overflowY: "auto",
-            border: "1px solid #ddd",
-            borderRadius: "4px",
-            background: "white",
-            padding: "10px",
-          }}
-        >
-          {messages.length === 0 ? (
-            <div style={{ color: "#666", fontStyle: "italic" }}>
-              No messages yet. Connect to WebSocket and start simulation to see
-              messages.
+        {/* Simulation Controls */}
+        <div style={{ marginBottom: "20px" }}>
+          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#666" }}>
+            Controls
+          </h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <button
+              onClick={startSimulation}
+              disabled={!isConnected || isSimulationRunning}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px 15px",
+                background:
+                  !isConnected || isSimulationRunning ? "#ccc" : "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor:
+                  !isConnected || isSimulationRunning
+                    ? "not-allowed"
+                    : "pointer",
+                fontSize: "14px",
+              }}
+            >
+              <Play size={16} />
+              Start Simulation
+            </button>
+
+            <button
+              onClick={stopSimulation}
+              disabled={!isConnected || !isSimulationRunning}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px 15px",
+                background:
+                  !isConnected || !isSimulationRunning ? "#ccc" : "#dc3545",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor:
+                  !isConnected || !isSimulationRunning
+                    ? "not-allowed"
+                    : "pointer",
+                fontSize: "14px",
+              }}
+            >
+              <Square size={16} />
+              Stop Simulation
+            </button>
+          </div>
+
+          {simulationStatus && (
+            <div
+              style={{
+                marginTop: "10px",
+                padding: "8px",
+                borderRadius: "4px",
+                background:
+                  simulationStatus.includes("Error") ||
+                  simulationStatus.includes("Failed")
+                    ? "#f8d7da"
+                    : simulationStatus.includes("successfully") ||
+                        simulationStatus.includes("stopped")
+                      ? "#d4edda"
+                      : "#fff3cd",
+                border: `1px solid ${
+                  simulationStatus.includes("Error") ||
+                  simulationStatus.includes("Failed")
+                    ? "#f5c6cb"
+                    : simulationStatus.includes("successfully") ||
+                        simulationStatus.includes("stopped")
+                      ? "#c3e6cb"
+                      : "#ffeaa7"
+                }`,
+                color:
+                  simulationStatus.includes("Error") ||
+                  simulationStatus.includes("Failed")
+                    ? "#721c24"
+                    : simulationStatus.includes("successfully") ||
+                        simulationStatus.includes("stopped")
+                      ? "#155724"
+                      : "#856404",
+                fontSize: "12px",
+              }}
+            >
+              {simulationStatus}
             </div>
-          ) : (
-            messages.map((message) => (
+          )}
+        </div>
+
+        {/* Messages */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "10px",
+            }}
+          >
+            <h4 style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+              Messages
+            </h4>
+            <button
+              onClick={clearMessages}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "4px 8px",
+                background: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "11px",
+              }}
+            >
+              <Trash2 size={10} />
+              Clear
+            </button>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              minHeight: "200px",
+              overflowY: "auto",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              background: "#fafafa",
+              padding: "8px",
+            }}
+          >
+            {messages.length === 0 ? (
               <div
-                key={message.id}
-                style={{
-                  marginBottom: "8px",
-                  padding: "8px",
-                  background: "#f8f9fa",
-                  borderRadius: "4px",
-                  borderLeft: "3px solid #007bff",
-                }}
+                style={{ color: "#666", fontStyle: "italic", fontSize: "12px" }}
               >
+                No messages yet. Connect to WebSocket and start simulation to
+                see messages.
+              </div>
+            ) : (
+              messages.map((message) => (
                 <div
+                  key={message.id}
                   style={{
-                    fontSize: "11px",
-                    color: "#666",
-                    marginBottom: "4px",
+                    marginBottom: "6px",
+                    padding: "6px",
+                    background: "white",
+                    borderRadius: "3px",
+                    borderLeft: "2px solid #007bff",
                   }}
                 >
-                  {message.timestamp}
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#666",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {message.timestamp}
+                  </div>
+                  <div style={{ fontSize: "11px", fontFamily: "monospace" }}>
+                    {message.content}
+                  </div>
                 </div>
-                <div style={{ fontSize: "13px", fontFamily: "monospace" }}>
-                  {message.content}
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -342,4 +379,3 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 };
 
 export default SimulationMonitor;
-
