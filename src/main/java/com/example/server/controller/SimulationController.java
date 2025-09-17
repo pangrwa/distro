@@ -1,5 +1,6 @@
 package com.example.server.controller;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.example.server.websocket.SimulationWebSocketHandler;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 public class SimulationController {
   private Process simulatorProcess;
