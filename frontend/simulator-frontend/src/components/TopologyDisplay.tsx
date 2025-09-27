@@ -6,8 +6,13 @@ import ReactFlow, {
   useEdgesState,
   Background,
   NodeTypes,
+  ConnectionMode,
+  Handle,
+  Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
+
+import CustomNode from "./CustomNode";
 import { NodeData } from "../types/topology";
 import {
   findConnectedComponents,
@@ -26,35 +31,44 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
   return (
     <div
       style={{
-        background: isSelected ? '#e3f2fd' : '#fff',
-        border: `2px solid ${isSelected ? '#2196f3' : '#333'}`,
-        borderRadius: '8px',
-        padding: '10px',
-        minWidth: '120px',
-        textAlign: 'center',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        background: isSelected ? "#e3f2fd" : "#fff",
+        border: `2px solid ${isSelected ? "#2196f3" : "#333"}`,
+        borderRadius: "8px",
+        padding: "10px",
+        minWidth: "120px",
+        textAlign: "center",
+        cursor: "pointer",
+        transition: "all 0.2s ease",
       }}
     >
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '14px' }}>
+      <Handle type="target" position={Position.Top} />
+      <Handle type="source" position={Position.Bottom} />
+
+      <div
+        style={{ fontWeight: "bold", marginBottom: "4px", fontSize: "14px" }}
+      >
         {data.label}
       </div>
-      <div style={{
-        fontSize: '11px',
-        color: '#666',
-        background: '#f5f5f5',
-        padding: '2px 6px',
-        borderRadius: '4px'
-      }}>
+      <div
+        style={{
+          fontSize: "11px",
+          color: "#666",
+          background: "#f5f5f5",
+          padding: "2px 6px",
+          borderRadius: "4px",
+        }}
+      >
         {data.program}
       </div>
       {isSelected && (
-        <div style={{
-          fontSize: '10px',
-          color: '#2196f3',
-          marginTop: '4px',
-          fontWeight: 'bold'
-        }}>
+        <div
+          style={{
+            fontSize: "10px",
+            color: "#2196f3",
+            marginTop: "4px",
+            fontWeight: "bold",
+          }}
+        >
           SELECTED
         </div>
       )}
@@ -66,7 +80,11 @@ const nodeTypes: NodeTypes = {
   readOnly: ReadOnlyNode,
 };
 
-const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, selectedNodeId, onNodeClick }) => {
+const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
+  nodes: nodeData,
+  selectedNodeId,
+  onNodeClick,
+}) => {
   const [nodes, setNodes] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
 
@@ -94,7 +112,10 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
           y: centerY + radius * Math.sin(angle),
         };
       } else if (topology === "line") {
-        const spacing = Math.max(120, Math.min(180, 400 / Math.max(totalNodes - 1, 1)));
+        const spacing = Math.max(
+          120,
+          Math.min(180, 400 / Math.max(totalNodes - 1, 1)),
+        );
         positions[node.id] = {
           x: centerX - ((totalNodes - 1) * spacing) / 2 + index * spacing,
           y: centerY,
@@ -111,7 +132,10 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
           const spacing = 120;
           positions[node.id] = {
             x: centerX - (cols * spacing) / 2 + (index % cols) * spacing,
-            y: centerY - (Math.ceil(totalNodes / cols) * spacing) / 2 + Math.floor(index / cols) * spacing,
+            y:
+              centerY -
+              (Math.ceil(totalNodes / cols) * spacing) / 2 +
+              Math.floor(index / cols) * spacing,
           };
         }
       } else {
@@ -120,7 +144,10 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
         const spacing = 150;
         positions[node.id] = {
           x: centerX - (cols * spacing) / 2 + (index % cols) * spacing,
-          y: centerY - (Math.ceil(totalNodes / cols) * spacing) / 2 + Math.floor(index / cols) * spacing,
+          y:
+            centerY -
+            (Math.ceil(totalNodes / cols) * spacing) / 2 +
+            Math.floor(index / cols) * spacing,
         };
       }
     });
@@ -139,7 +166,10 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
     if (topology === "ring" && totalNodes > 2) {
       width = height = radius * 2 + nodeSize;
     } else if (topology === "line") {
-      const spacing = Math.max(120, Math.min(180, 400 / Math.max(totalNodes - 1, 1)));
+      const spacing = Math.max(
+        120,
+        Math.min(180, 400 / Math.max(totalNodes - 1, 1)),
+      );
       width = (totalNodes - 1) * spacing + nodeSize;
       height = nodeSize + 40;
     } else if (topology === "fully_connected") {
@@ -183,7 +213,10 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
         const col = index % cols;
 
         const x = bounds.width / 2 + padding + col * (canvasWidth / cols);
-        const y = bounds.height / 2 + padding + row * (canvasHeight / Math.ceil(components.length / cols));
+        const y =
+          bounds.height / 2 +
+          padding +
+          row * (canvasHeight / Math.ceil(components.length / cols));
 
         centers.push({ x, y });
       });
@@ -244,7 +277,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
               source: node.id,
               target: targetId,
               type: "straight",
-              style: { stroke: '#333', strokeWidth: 2 },
+              style: { stroke: "#333", strokeWidth: 2 },
             });
           }
         }
@@ -256,7 +289,14 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
   }, [nodeData, selectedNodeId, onNodeClick, setNodes, setEdges]);
 
   return (
-    <div style={{ width: "100%", height: "300px", border: "1px solid #ddd", borderRadius: "4px" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "300px",
+        border: "1px solid #ddd",
+        borderRadius: "4px",
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -271,6 +311,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
         zoomOnPinch={true}
         zoomOnDoubleClick={false}
         nodesFocusable={true}
+        connectionMode={ConnectionMode.Loose}
       >
         <Background />
       </ReactFlow>
@@ -279,3 +320,4 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, sele
 };
 
 export default TopologyDisplay;
+
