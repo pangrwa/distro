@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -87,6 +87,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
 }) => {
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     event.stopPropagation();
@@ -310,39 +311,58 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     if (!nodeData || nodeData.length === 0) {
       setNodes([]);
       setEdges([]);
+      setHasInitialized(false);
       return;
     }
 
-    const components = findConnectedComponents(nodeData);
-    const centers = calculateComponentCenters(components);
-    const allPositions: Record<string, { x: number; y: number }> = {};
+    // Only recalculate positions on initial load or when node structure changes
+    if (!hasInitialized) {
+      const components = findConnectedComponents(nodeData);
+      const centers = calculateComponentCenters(components);
+      const allPositions: Record<string, { x: number; y: number }> = {};
 
-    // Calculate positions for each component
-    components.forEach((component, componentIndex) => {
-      const topology = detectComponentTopology(component);
-      const center = centers[componentIndex] || { x: 400, y: 300 };
-      const componentPositions = calculateComponentPositions(
-        component,
-        topology,
-        center.x,
-        center.y,
+      // Calculate positions for each component
+      components.forEach((component, componentIndex) => {
+        const topology = detectComponentTopology(component);
+        const center = centers[componentIndex] || { x: 400, y: 300 };
+        const componentPositions = calculateComponentPositions(
+          component,
+          topology,
+          center.x,
+          center.y,
+        );
+        Object.assign(allPositions, componentPositions);
+      });
+
+      const flowNodes: Node[] = nodeData.map((node) => ({
+        id: node.id,
+        type: "readOnly",
+        position: allPositions[node.id] || { x: 0, y: 0 },
+        data: {
+          label: node.id,
+          program: node.program,
+          isSelected: selectedNodeId === node.id,
+        },
+        draggable: true,
+        selectable: true,
+      }));
+
+      setNodes(flowNodes);
+      setHasInitialized(true);
+    } else {
+      // Only update the selection state without changing positions
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isSelected: selectedNodeId === node.id,
+          },
+        }))
       );
-      Object.assign(allPositions, componentPositions);
-    });
+    }
 
-    const flowNodes: Node[] = nodeData.map((node) => ({
-      id: node.id,
-      type: "readOnly",
-      position: allPositions[node.id] || { x: 0, y: 0 },
-      data: {
-        label: node.id,
-        program: node.program,
-        isSelected: selectedNodeId === node.id,
-      },
-      draggable: true,
-      selectable: true,
-    }));
-
+    // Always update edges since they don't affect positions
     const flowEdges: Edge[] = [];
     nodeData.forEach((node) => {
       node.connections.forEach((targetId) => {
@@ -364,9 +384,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
       });
     });
 
-    setNodes(flowNodes);
     setEdges(flowEdges);
-  }, [nodeData, selectedNodeId, onNodeClick, setNodes, setEdges]);
+  }, [nodeData, selectedNodeId, hasInitialized, setNodes, setEdges]);
 
   return (
     <div
