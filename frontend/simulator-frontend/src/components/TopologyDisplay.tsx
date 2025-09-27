@@ -16,18 +16,26 @@ import {
 
 interface TopologyDisplayProps {
   nodes: NodeData[];
+  selectedNodeId?: string;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 const ReadOnlyNode: React.FC<any> = ({ data }) => {
+  const isSelected = data.isSelected;
+
   return (
-    <div style={{
-      background: '#fff',
-      border: '2px solid #333',
-      borderRadius: '8px',
-      padding: '10px',
-      minWidth: '120px',
-      textAlign: 'center'
-    }}>
+    <div
+      style={{
+        background: isSelected ? '#e3f2fd' : '#fff',
+        border: `2px solid ${isSelected ? '#2196f3' : '#333'}`,
+        borderRadius: '8px',
+        padding: '10px',
+        minWidth: '120px',
+        textAlign: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      }}
+    >
       <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '14px' }}>
         {data.label}
       </div>
@@ -40,6 +48,16 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
       }}>
         {data.program}
       </div>
+      {isSelected && (
+        <div style={{
+          fontSize: '10px',
+          color: '#2196f3',
+          marginTop: '4px',
+          fontWeight: 'bold'
+        }}>
+          SELECTED
+        </div>
+      )}
     </div>
   );
 };
@@ -48,9 +66,14 @@ const nodeTypes: NodeTypes = {
   readOnly: ReadOnlyNode,
 };
 
-const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData }) => {
+const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData, selectedNodeId, onNodeClick }) => {
   const [nodes, setNodes] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
+
+  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
+    event.stopPropagation();
+    onNodeClick?.(node.id);
+  };
 
   // Calculate positions for nodes in a component (simplified version)
   const calculateComponentPositions = (
@@ -201,6 +224,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData }) =>
       data: {
         label: node.id,
         program: node.program,
+        isSelected: selectedNodeId === node.id,
       },
       draggable: false,
       selectable: false,
@@ -229,7 +253,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData }) =>
 
     setNodes(flowNodes);
     setEdges(flowEdges);
-  }, [nodeData, setNodes, setEdges]);
+  }, [nodeData, selectedNodeId, onNodeClick, setNodes, setEdges]);
 
   return (
     <div style={{ width: "100%", height: "300px", border: "1px solid #ddd", borderRadius: "4px" }}>
@@ -237,14 +261,16 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({ nodes: nodeData }) =>
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodeClick={handleNodeClick}
         fitView
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
-        panOnDrag={false}
-        zoomOnScroll={false}
-        zoomOnPinch={false}
+        elementsSelectable={true}
+        panOnDrag={true}
+        zoomOnScroll={true}
+        zoomOnPinch={true}
         zoomOnDoubleClick={false}
+        nodesFocusable={true}
       >
         <Background />
       </ReactFlow>

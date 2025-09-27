@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Play, Square, Wifi, WifiOff, Trash2 } from "lucide-react";
+import { Play, Square, Wifi, WifiOff, Trash2, Home } from "lucide-react";
 import { NodeData, JitterConfig } from "../types/topology";
 import { generateYaml } from "../utils/yamlGenerator";
-import TopologyDisplay from "./TopologyDisplay";
 
 interface SimulationMonitorProps {
   nodes: NodeData[];
   jitterConfig: JitterConfig;
+  selectedNodeId?: string;
+  onBackToGlobal?: () => void;
 }
 
 interface Message {
@@ -15,19 +16,99 @@ interface Message {
   content: string;
 }
 
+interface NodeMessages {
+  [nodeId: string]: Message[];
+}
+
 const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
   nodes,
   jitterConfig,
+  selectedNodeId,
+  onBackToGlobal,
 }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSimulationRunning, setIsSimulationRunning] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [globalMessages, setGlobalMessages] = useState<Message[]>([]);
+  const [nodeMessages, setNodeMessages] = useState<NodeMessages>({});
   const [simulationStatus, setSimulationStatus] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const idRef = useRef(0);
+  const MAX_MESSAGES_PER_NODE = 30;
+
+  // Function to add message to a specific node's inbox with limit
+  const addMessageToNode = (nodeId: string, content: string) => {
+    const message: Message = {
+      id: idRef.current.toString(),
+      timestamp: new Date().toLocaleTimeString(),
+      content,
+    };
+    idRef.current += 1;
+
+    setNodeMessages(prev => {
+      const currentMessages = prev[nodeId] || [];
+      const updatedMessages = [...currentMessages, message];
+
+      // Keep only the latest 30 messages
+      const limitedMessages = updatedMessages.slice(-MAX_MESSAGES_PER_NODE);
+
+      return {
+        ...prev,
+        [nodeId]: limitedMessages
+      };
+    });
+  };
+
+  // Function to add global message (system messages)
+  const addGlobalMessage = (content: string) => {
+    const message: Message = {
+      id: idRef.current.toString(),
+      timestamp: new Date().toLocaleTimeString(),
+      content,
+    };
+    idRef.current += 1;
+
+    setGlobalMessages(prev => {
+      const updatedMessages = [...prev, message];
+      // Keep only the latest 50 global messages
+      return updatedMessages.slice(-50);
+    });
+  };
+
+  // Function to parse and distribute received messages
+  const parseAndDistributeMessage = (content: string) => {
+    try {
+      // Check if this is a received message with JSON content
+      if (content.startsWith('Received: ')) {
+        const jsonStr = content.substring('Received: '.length);
+        const messageData = JSON.parse(jsonStr);
+
+        // Add to both fromNode and toNode inboxes
+        if (messageData.fromNode) {
+          addMessageToNode(messageData.fromNode, content);
+        }
+        if (messageData.toNode && messageData.toNode !== messageData.fromNode) {
+          addMessageToNode(messageData.toNode, content);
+        }
+      } else {
+        // System messages go to global inbox
+        addGlobalMessage(content);
+      }
+    } catch (error) {
+      // If parsing fails, treat as global message
+      addGlobalMessage(content);
+    }
+  };
+
+  // Get messages to display based on selected node
+  const getMessagesToDisplay = (): Message[] => {
+    if (selectedNodeId && nodeMessages[selectedNodeId]) {
+      return nodeMessages[selectedNodeId];
+    }
+    return globalMessages;
+  };
 
   // Cleanup WebSocket on unmount
   useEffect(() => {
@@ -46,20 +127,20 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 
     wsRef.current.onopen = () => {
       setIsConnected(true);
-      addMessage("WebSocket connection established");
+      addGlobalMessage("WebSocket connection established");
     };
 
     wsRef.current.onmessage = (event) => {
-      addMessage(`Received: ${event.data}`);
+      parseAndDistributeMessage(`Received: ${event.data}`);
     };
 
     wsRef.current.onclose = () => {
       setIsConnected(false);
-      addMessage("WebSocket connection closed");
+      addGlobalMessage("WebSocket connection closed");
     };
 
     wsRef.current.onerror = (error) => {
-      addMessage(`WebSocket error: ${error}`);
+      addGlobalMessage(`WebSocket error: ${error}`);
     };
   };
 
@@ -68,34 +149,34 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
       wsRef.current.close();
       wsRef.current = null;
       setIsConnected(false);
-      addMessage("WebSocket disconnected by user");
+      addGlobalMessage("WebSocket disconnected by user");
     }
   };
 
-  const addMessage = (content: string) => {
-    const message: Message = {
-      id: idRef.current.toString(),
-      timestamp: new Date().toLocaleTimeString(),
-      content,
-    };
-    idRef.current += 1;
-    setMessages((prev) => [...prev, message]);
-  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [globalMessages, nodeMessages, selectedNodeId]);
 
   const clearMessages = () => {
-    setMessages([]);
+    if (selectedNodeId) {
+      // Clear only the selected node's messages
+      setNodeMessages(prev => ({
+        ...prev,
+        [selectedNodeId]: []
+      }));
+    } else {
+      // Clear global messages when no node is selected
+      setGlobalMessages([]);
+    }
   };
 
   const generateTopologyFile = () => {
     const yamlContent = generateYaml(nodes, jitterConfig);
     const blob = new Blob([yamlContent], { type: "text/yaml" });
     const file = new File([blob], "topology.yaml", { type: "text/yaml" });
-    addMessage("Generated topology file from current configuration");
+    addGlobalMessage("Generated topology file from current configuration");
 
     return file;
   };
@@ -123,14 +204,14 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
       if (response.ok) {
         setIsSimulationRunning(true);
         setSimulationStatus("Simulation started successfully");
-        addMessage(`Simulation started: ${result}`);
+        addGlobalMessage(`Simulation started: ${result}`);
       } else {
         setSimulationStatus("Failed to start simulation");
-        addMessage(`Error starting simulation: ${result}`);
+        addGlobalMessage(`Error starting simulation: ${result}`);
       }
     } catch (error) {
       setSimulationStatus("Error starting simulation");
-      addMessage(`Error starting simulation: ${error}`);
+      addGlobalMessage(`Error starting simulation: ${error}`);
     }
   };
 
@@ -150,22 +231,22 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
       if (response.ok) {
         setIsSimulationRunning(false);
         setSimulationStatus("Simulation stopped");
-        addMessage(`Simulation stopped: ${result}`);
+        addGlobalMessage(`Simulation stopped: ${result}`);
 
         // Close WebSocket connection
         if (wsRef.current) {
           wsRef.current.close();
           wsRef.current = null;
           setIsConnected(false);
-          addMessage("WebSocket connection closed");
+          addGlobalMessage("WebSocket connection closed");
         }
       } else {
         setSimulationStatus("Failed to stop simulation");
-        addMessage(`Error stopping simulation: ${result}`);
+        addGlobalMessage(`Error stopping simulation: ${result}`);
       }
     } catch (error) {
       setSimulationStatus("Error stopping simulation");
-      addMessage(`Error stopping simulation: ${error}`);
+      addGlobalMessage(`Error stopping simulation: ${error}`);
     }
   };
 
@@ -366,27 +447,57 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
               marginBottom: "10px",
             }}
           >
-            <h4 style={{ margin: 0, fontSize: "14px", color: "#666" }}>
-              Messages
-            </h4>
-            <button
-              onClick={clearMessages}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                padding: "4px 8px",
-                background: "#6c757d",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "11px",
-              }}
-            >
-              <Trash2 size={10} />
-              Clear
-            </button>
+            <div>
+              <h4 style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+                {selectedNodeId ? `Messages for ${selectedNodeId}` : "Global Messages"}
+              </h4>
+              <div style={{ fontSize: "12px", color: "#666", marginTop: "2px" }}>
+                {selectedNodeId
+                  ? `Personal inbox (max ${MAX_MESSAGES_PER_NODE} messages)`
+                  : "System messages and connection status"
+                }
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {selectedNodeId && (
+                <button
+                  onClick={onBackToGlobal}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "4px 8px",
+                    background: "#28a745",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                  }}
+                >
+                  <Home size={10} />
+                  Global
+                </button>
+              )}
+              <button
+                onClick={clearMessages}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "4px 8px",
+                  background: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                }}
+              >
+                <Trash2 size={10} />
+                Clear
+              </button>
+            </div>
           </div>
 
           <div
@@ -399,15 +510,17 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
               padding: "8px",
             }}
           >
-            {messages.length === 0 ? (
+            {getMessagesToDisplay().length === 0 ? (
               <div
                 style={{ color: "#666", fontStyle: "italic", fontSize: "12px" }}
               >
-                No messages yet. Connect to WebSocket and start simulation to
-                see messages.
+                {selectedNodeId
+                  ? `No messages in ${selectedNodeId}'s inbox yet. Start simulation to see node-specific messages.`
+                  : "No global messages yet. Connect to WebSocket and start simulation to see system messages."
+                }
               </div>
             ) : (
-              messages.map((message) => (
+              getMessagesToDisplay().map((message) => (
                 <div
                   key={message.id}
                   style={{
@@ -415,7 +528,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
                     padding: "6px",
                     background: "white",
                     borderRadius: "3px",
-                    borderLeft: "2px solid #007bff",
+                    borderLeft: selectedNodeId ? "2px solid #2196f3" : "2px solid #007bff",
                   }}
                 >
                   <div

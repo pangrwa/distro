@@ -12,6 +12,9 @@ const SimulationRunner: React.FC = () => {
     delay_ms: 5000,
   });
   const [topologyLoaded, setTopologyLoaded] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     loadTopologyFromStorage();
@@ -19,15 +22,17 @@ const SimulationRunner: React.FC = () => {
 
   const loadTopologyFromStorage = () => {
     try {
-      const savedTopology = localStorage.getItem('currentTopology');
+      const savedTopology = localStorage.getItem("currentTopology");
       if (savedTopology) {
         const topology = JSON.parse(savedTopology);
         setNodes(topology.nodes || []);
-        setJitterConfig(topology.jitterConfig || { drop_rate: 0.0, delay_ms: 5000 });
+        setJitterConfig(
+          topology.jitterConfig || { drop_rate: 0.0, delay_ms: 5000 },
+        );
         setTopologyLoaded(true);
       }
     } catch (error) {
-      console.error('Failed to load topology from storage:', error);
+      console.error("Failed to load topology from storage:", error);
     }
   };
 
@@ -35,7 +40,16 @@ const SimulationRunner: React.FC = () => {
     setNodes([]);
     setJitterConfig({ drop_rate: 0.0, delay_ms: 5000 });
     setTopologyLoaded(false);
-    localStorage.removeItem('currentTopology');
+    setSelectedNodeId(undefined);
+    localStorage.removeItem("currentTopology");
+  };
+
+  const handleNodeClick = (nodeId: string) => {
+    setSelectedNodeId(selectedNodeId === nodeId ? undefined : nodeId);
+  };
+
+  const handleBackToGlobal = () => {
+    setSelectedNodeId(undefined);
   };
 
   return (
@@ -113,10 +127,21 @@ const SimulationRunner: React.FC = () => {
 
         {/* Main Content Layout */}
         {topologyLoaded ? (
-          <div style={{ display: "flex", gap: "20px", height: "calc(100vh - 200px)" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "20px",
+              height: "calc(100vh - 200px)",
+            }}
+          >
             {/* Left Panel - Simulation Monitor */}
             <div style={{ width: "400px", overflow: "auto" }}>
-              <SimulationMonitor nodes={nodes} jitterConfig={jitterConfig} />
+              <SimulationMonitor
+                nodes={nodes}
+                jitterConfig={jitterConfig}
+                selectedNodeId={selectedNodeId}
+                onBackToGlobal={handleBackToGlobal}
+              />
             </div>
 
             {/* Right Panel - Topology Visualization */}
@@ -130,11 +155,24 @@ const SimulationRunner: React.FC = () => {
                 overflow: "auto",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "20px",
+                }}
+              >
                 <h3>Current Topology Visualization</h3>
-                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "15px" }}
+                >
                   <div style={{ fontSize: "14px", color: "#666" }}>
-                    Nodes: {nodes.length} | Connections: {nodes.reduce((acc, node) => acc + node.connections.length, 0) / 2}
+                    Nodes: {nodes.length} | Connections:{" "}
+                    {nodes.reduce(
+                      (acc, node) => acc + node.connections.length,
+                      0,
+                    ) / 2}
                   </div>
                   <button
                     onClick={clearTopology}
@@ -155,15 +193,33 @@ const SimulationRunner: React.FC = () => {
 
               {/* Topology Display */}
               <div style={{ height: "calc(100% - 80px)", minHeight: "400px" }}>
-                <TopologyDisplay nodes={nodes} />
+                <TopologyDisplay
+                  nodes={nodes}
+                  selectedNodeId={selectedNodeId}
+                  onNodeClick={handleNodeClick}
+                />
               </div>
 
               {/* Configuration Summary */}
-              <div style={{ marginTop: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "4px" }}>
-                <h4 style={{ marginBottom: "10px", color: "#333" }}>Jitter Configuration</h4>
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "15px",
+                  background: "#f8f9fa",
+                  borderRadius: "4px",
+                }}
+              >
+                <h4 style={{ marginBottom: "10px", color: "#333" }}>
+                  Jitter Configuration
+                </h4>
                 <div style={{ display: "flex", gap: "20px", fontSize: "14px" }}>
-                  <div><strong>Drop Rate:</strong> {(jitterConfig.drop_rate * 100).toFixed(1)}%</div>
-                  <div><strong>Delay:</strong> {jitterConfig.delay_ms}ms</div>
+                  <div>
+                    <strong>Drop Rate:</strong>{" "}
+                    {(jitterConfig.drop_rate * 100).toFixed(1)}%
+                  </div>
+                  <div>
+                    <strong>Delay:</strong> {jitterConfig.delay_ms}ms
+                  </div>
                 </div>
               </div>
             </div>
@@ -179,7 +235,9 @@ const SimulationRunner: React.FC = () => {
               textAlign: "center",
             }}
           >
-            <h3 style={{ color: "#666", marginBottom: "15px" }}>No Topology Configuration Found</h3>
+            <h3 style={{ color: "#666", marginBottom: "15px" }}>
+              No Topology Configuration Found
+            </h3>
             <p style={{ color: "#666", marginBottom: "20px" }}>
               You need to design a topology first before running simulations.
             </p>
@@ -209,3 +267,4 @@ const SimulationRunner: React.FC = () => {
 };
 
 export default SimulationRunner;
+
