@@ -29,9 +29,8 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 
   const idRef = useRef(0);
 
-  // Connect to WebSocket
+  // Cleanup WebSocket on unmount
   useEffect(() => {
-    connectWebSocket();
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
@@ -57,14 +56,20 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
     wsRef.current.onclose = () => {
       setIsConnected(false);
       addMessage("WebSocket connection closed");
-
-      // Try to reconnect after 3 seconds
-      setTimeout(connectWebSocket, 3000);
     };
 
     wsRef.current.onerror = (error) => {
       addMessage(`WebSocket error: ${error}`);
     };
+  };
+
+  const disconnectWebSocket = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+      setIsConnected(false);
+      addMessage("WebSocket disconnected by user");
+    }
   };
 
   const addMessage = (content: string) => {
@@ -191,8 +196,11 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
         </div>
         */}
 
-        {/* Connection Status */}
+        {/* WebSocket Connection */}
         <div style={{ marginBottom: "20px" }}>
+          <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#666" }}>
+            WebSocket Connection
+          </h4>
           <div
             style={{
               display: "flex",
@@ -204,10 +212,51 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
               border: `1px solid ${isConnected ? "#c3e6cb" : "#f5c6cb"}`,
               color: isConnected ? "#155724" : "#721c24",
               fontSize: "14px",
+              marginBottom: "10px",
             }}
           >
             {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
-            WebSocket: {isConnected ? "Connected" : "Disconnected"}
+            Status: {isConnected ? "Connected" : "Disconnected"}
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={connectWebSocket}
+              disabled={isConnected}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "6px 12px",
+                background: isConnected ? "#ccc" : "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: isConnected ? "not-allowed" : "pointer",
+                fontSize: "12px",
+              }}
+            >
+              <Wifi size={12} />
+              Connect
+            </button>
+            <button
+              onClick={disconnectWebSocket}
+              disabled={!isConnected}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "6px 12px",
+                background: !isConnected ? "#ccc" : "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: !isConnected ? "not-allowed" : "pointer",
+                fontSize: "12px",
+              }}
+            >
+              <WifiOff size={12} />
+              Disconnect
+            </button>
           </div>
         </div>
 
