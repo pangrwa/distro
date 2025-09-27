@@ -85,7 +85,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   selectedNodeId,
   onNodeClick,
 }) => {
-  const [nodes, setNodes] = useNodesState([]);
+  const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
@@ -93,7 +93,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     onNodeClick?.(node.id);
   };
 
-  // Calculate positions for nodes in a component (simplified version)
+  // Calculate positions for nodes in a component
   const calculateComponentPositions = (
     component: NodeData[],
     topology: string,
@@ -101,7 +101,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     centerY: number,
   ) => {
     const totalNodes = component.length;
-    const radius = Math.max(80, 60 + totalNodes * 15);
+    const radius = Math.max(120, 80 + totalNodes * 20);
     const positions: Record<string, { x: number; y: number }> = {};
 
     component.forEach((node, index) => {
@@ -113,8 +113,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
         };
       } else if (topology === "line") {
         const spacing = Math.max(
-          120,
-          Math.min(180, 400 / Math.max(totalNodes - 1, 1)),
+          180,
+          Math.min(250, 800 / Math.max(totalNodes - 1, 1)),
         );
         positions[node.id] = {
           x: centerX - ((totalNodes - 1) * spacing) / 2 + index * spacing,
@@ -129,7 +129,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
           };
         } else {
           const cols = Math.ceil(Math.sqrt(totalNodes));
-          const spacing = 120;
+          const spacing = 150;
           positions[node.id] = {
             x: centerX - (cols * spacing) / 2 + (index % cols) * spacing,
             y:
@@ -139,9 +139,9 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
           };
         }
       } else {
-        // Default grid layout
+        // Default grid layout for custom/single nodes
         const cols = Math.min(3, totalNodes);
-        const spacing = 150;
+        const spacing = 200;
         positions[node.id] = {
           x: centerX - (cols * spacing) / 2 + (index % cols) * spacing,
           y:
@@ -155,37 +155,42 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     return positions;
   };
 
-  // Calculate topology bounds (simplified)
+  // Calculate the bounding box dimensions for a topology
   const calculateTopologyBounds = (component: NodeData[], topology: string) => {
     const totalNodes = component.length;
-    const radius = Math.max(80, 60 + totalNodes * 15);
-    const nodeSize = 60;
+    const radius = Math.max(120, 80 + totalNodes * 20);
+    const nodeSize = 80; // Approximate node size including padding
 
     let width: number, height: number;
 
     if (topology === "ring" && totalNodes > 2) {
+      // Circle: diameter + node size
       width = height = radius * 2 + nodeSize;
     } else if (topology === "line") {
+      // Line: length + node size
       const spacing = Math.max(
-        120,
-        Math.min(180, 400 / Math.max(totalNodes - 1, 1)),
+        180,
+        Math.min(250, 800 / Math.max(totalNodes - 1, 1)),
       );
       width = (totalNodes - 1) * spacing + nodeSize;
-      height = nodeSize + 40;
+      height = nodeSize + 50; // Small height padding
     } else if (topology === "fully_connected") {
       if (totalNodes <= 6) {
+        // Circle layout
         width = height = radius * 2 + nodeSize;
       } else {
+        // Grid layout
         const cols = Math.ceil(Math.sqrt(totalNodes));
         const rows = Math.ceil(totalNodes / cols);
-        const spacing = 120;
+        const spacing = 150;
         width = cols * spacing + nodeSize;
         height = rows * spacing + nodeSize;
       }
     } else {
+      // Custom/single nodes - grid
       const cols = Math.min(3, totalNodes);
       const rows = Math.ceil(totalNodes / cols);
-      const spacing = 150;
+      const spacing = 200;
       width = cols * spacing + nodeSize;
       height = rows * spacing + nodeSize;
     }
@@ -193,34 +198,109 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     return { width, height };
   };
 
-  // Calculate component centers (simplified)
+  // Calculate non-overlapping positions for topology components
   const calculateComponentCenters = (components: NodeData[][]) => {
-    const canvasWidth = 600;
-    const canvasHeight = 400;
-    const padding = 40;
+    const canvasWidth = 1400;
+    const canvasHeight = 900;
+    const padding = 50;
     const centers: { x: number; y: number }[] = [];
+    const placedBoxes: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }[] = [];
 
-    if (components.length === 1) {
-      centers.push({ x: canvasWidth / 2, y: canvasHeight / 2 });
-    } else {
-      components.forEach((component, index) => {
-        const topology = detectComponentTopology(component);
-        const bounds = calculateTopologyBounds(component, topology);
+    components.forEach((component, index) => {
+      const topology = detectComponentTopology(component);
+      const bounds = calculateTopologyBounds(component, topology);
 
-        // Simple layout for multiple components
-        const cols = Math.ceil(Math.sqrt(components.length));
-        const row = Math.floor(index / cols);
-        const col = index % cols;
+      let bestPosition = { x: 0, y: 0 };
+      let placed = false;
 
-        const x = bounds.width / 2 + padding + col * (canvasWidth / cols);
-        const y =
-          bounds.height / 2 +
-          padding +
-          row * (canvasHeight / Math.ceil(components.length / cols));
+      // Try different positions to avoid overlap
+      for (let attempts = 0; attempts < 50 && !placed; attempts++) {
+        let candidateX: number, candidateY: number;
 
-        centers.push({ x, y });
-      });
-    }
+        if (index === 0) {
+          // First component - center it
+          candidateX = canvasWidth / 2;
+          candidateY = canvasHeight / 2;
+        } else if (index === 1) {
+          // Second component - try left side first
+          candidateX = bounds.width / 2 + padding;
+          candidateY = canvasHeight / 2;
+        } else {
+          // Additional components - try various positions
+          const gridCols = Math.ceil(Math.sqrt(components.length));
+          const idealCol = index % gridCols;
+          const idealRow = Math.floor(index / gridCols);
+
+          candidateX =
+            bounds.width / 2 + padding + idealCol * (canvasWidth / gridCols);
+          candidateY =
+            bounds.height / 2 +
+            padding +
+            idealRow * (canvasHeight / Math.ceil(components.length / gridCols));
+
+          // Add some randomness if the ideal position fails
+          if (attempts > 0) {
+            candidateX += (Math.random() - 0.5) * 200;
+            candidateY += (Math.random() - 0.5) * 200;
+          }
+        }
+
+        // Ensure within canvas bounds
+        candidateX = Math.max(
+          bounds.width / 2 + padding,
+          Math.min(canvasWidth - bounds.width / 2 - padding, candidateX),
+        );
+        candidateY = Math.max(
+          bounds.height / 2 + padding,
+          Math.min(canvasHeight - bounds.height / 2 - padding, candidateY),
+        );
+
+        // Check for overlap with existing components
+        const newBox = {
+          x: candidateX - bounds.width / 2,
+          y: candidateY - bounds.height / 2,
+          width: bounds.width,
+          height: bounds.height,
+        };
+
+        const hasOverlap = placedBoxes.some(
+          (box) =>
+            !(
+              newBox.x + newBox.width + padding < box.x ||
+              box.x + box.width + padding < newBox.x ||
+              newBox.y + newBox.height + padding < box.y ||
+              box.y + box.height + padding < newBox.y
+            ),
+        );
+
+        if (!hasOverlap) {
+          bestPosition = { x: candidateX, y: candidateY };
+          placedBoxes.push(newBox);
+          placed = true;
+        }
+      }
+
+      // Fallback position if no good spot found
+      if (!placed) {
+        bestPosition = {
+          x:
+            bounds.width / 2 +
+            padding +
+            ((index * 300) % (canvasWidth - bounds.width)),
+          y:
+            bounds.height / 2 +
+            padding +
+            Math.floor((index * 300) / (canvasWidth - bounds.width)) * 250,
+        };
+      }
+
+      centers.push(bestPosition);
+    });
 
     return centers;
   };
@@ -240,7 +320,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     // Calculate positions for each component
     components.forEach((component, componentIndex) => {
       const topology = detectComponentTopology(component);
-      const center = centers[componentIndex] || { x: 300, y: 200 };
+      const center = centers[componentIndex] || { x: 400, y: 300 };
       const componentPositions = calculateComponentPositions(
         component,
         topology,
@@ -259,8 +339,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
         program: node.program,
         isSelected: selectedNodeId === node.id,
       },
-      draggable: false,
-      selectable: false,
+      draggable: true,
+      selectable: true,
     }));
 
     const flowEdges: Edge[] = [];
@@ -292,7 +372,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     <div
       style={{
         width: "100%",
-        height: "300px",
+        height: "500px",
         border: "1px solid #ddd",
         borderRadius: "4px",
       }}
@@ -301,9 +381,10 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={onNodesChangeFlow}
         onNodeClick={handleNodeClick}
         fitView
-        nodesDraggable={false}
+        nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={true}
         panOnDrag={true}
