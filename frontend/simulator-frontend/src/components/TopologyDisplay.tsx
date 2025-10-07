@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -12,7 +12,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import CustomNode from "./CustomNode";
 import { NodeData } from "../types/topology";
 import {
   findConnectedComponents,
@@ -23,6 +22,7 @@ interface TopologyDisplayProps {
   nodes: NodeData[];
   selectedNodeId?: string;
   onNodeClick?: (nodeId: string) => void;
+  onMessageAnimation?: (fromNode: string, toNode: string) => void;
 }
 
 const ReadOnlyNode: React.FC<any> = ({ data }) => {
@@ -84,15 +84,44 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   nodes: nodeData,
   selectedNodeId,
   onNodeClick,
+  onMessageAnimation,
 }) => {
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [activeAnimations, setActiveAnimations] = useState<Set<string>>(new Set());
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     event.stopPropagation();
     onNodeClick?.(node.id);
   };
+
+  // Function to animate a message between two nodes
+  const animateMessage = useCallback((fromNode: string, toNode: string) => {
+    const edgeId1 = `${fromNode}-${toNode}`;
+    const edgeId2 = `${toNode}-${fromNode}`;
+
+    // Find which edge exists
+    const edgeId = activeAnimations.has(edgeId1) || edges.some(e => e.id === edgeId1) ? edgeId1 : edgeId2;
+
+    setActiveAnimations(prev => new Set(prev).add(edgeId));
+
+    // Remove animation after 2 seconds
+    setTimeout(() => {
+      setActiveAnimations(prev => {
+        const next = new Set(prev);
+        next.delete(edgeId);
+        return next;
+      });
+    }, 2000);
+  }, [edges, activeAnimations]);
+
+  // Expose animation function via callback
+  useEffect(() => {
+    if (onMessageAnimation) {
+      (window as any).__animateMessage = animateMessage;
+    }
+  }, [animateMessage, onMessageAnimation]);
 
   // Calculate positions for nodes in a component
   const calculateComponentPositions = (
@@ -372,12 +401,18 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
 
           // Only add edge if reverse doesn't exist
           if (!flowEdges.some((e) => e.id === reverseEdgeId)) {
+            const isAnimated = activeAnimations.has(edgeId);
+
             flowEdges.push({
               id: edgeId,
               source: node.id,
               target: targetId,
               type: "straight",
-              style: { stroke: "#333", strokeWidth: 2 },
+              animated: isAnimated,
+              style: {
+                stroke: isAnimated ? "#ff6b6b" : "#333",
+                strokeWidth: isAnimated ? 3 : 2
+              },
             });
           }
         }
@@ -385,7 +420,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     });
 
     setEdges(flowEdges);
-  }, [nodeData, selectedNodeId, hasInitialized, setNodes, setEdges]);
+  }, [nodeData, selectedNodeId, hasInitialized, activeAnimations, setNodes, setEdges]);
 
   return (
     <div

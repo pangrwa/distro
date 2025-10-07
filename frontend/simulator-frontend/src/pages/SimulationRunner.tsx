@@ -16,6 +16,13 @@ const SimulationRunner: React.FC = () => {
     undefined,
   );
 
+  const handleMessageAnimation = (fromNode: string, toNode: string) => {
+    // This will be called by SimulationMonitor when a message is received
+    if ((window as any).__animateMessage) {
+      (window as any).__animateMessage(fromNode, toNode);
+    }
+  };
+
   useEffect(() => {
     loadTopologyFromStorage();
   }, []);
@@ -141,6 +148,7 @@ const SimulationRunner: React.FC = () => {
                 jitterConfig={jitterConfig}
                 selectedNodeId={selectedNodeId}
                 onBackToGlobal={handleBackToGlobal}
+                onMessageAnimation={handleMessageAnimation}
               />
             </div>
 
@@ -197,6 +205,7 @@ const SimulationRunner: React.FC = () => {
                   nodes={nodes}
                   selectedNodeId={selectedNodeId}
                   onNodeClick={handleNodeClick}
+                  onMessageAnimation={handleMessageAnimation}
                 />
               </div>
 

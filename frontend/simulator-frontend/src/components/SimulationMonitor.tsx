@@ -8,6 +8,7 @@ interface SimulationMonitorProps {
   jitterConfig: JitterConfig;
   selectedNodeId?: string;
   onBackToGlobal?: () => void;
+  onMessageAnimation?: (fromNode: string, toNode: string) => void;
 }
 
 interface Message {
@@ -25,6 +26,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
   jitterConfig,
   selectedNodeId,
   onBackToGlobal,
+  onMessageAnimation,
 }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSimulationRunning, setIsSimulationRunning] = useState(false);
@@ -84,6 +86,11 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
       if (content.startsWith('Received: ')) {
         const jsonStr = content.substring('Received: '.length);
         const messageData = JSON.parse(jsonStr);
+
+        // Trigger animation if we have fromNode and toNode
+        if (messageData.fromNode && messageData.toNode && onMessageAnimation) {
+          onMessageAnimation(messageData.fromNode, messageData.toNode);
+        }
 
         // Add to both fromNode and toNode inboxes
         if (messageData.fromNode) {
