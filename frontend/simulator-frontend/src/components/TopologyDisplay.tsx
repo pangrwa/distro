@@ -89,7 +89,9 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [activeAnimations, setActiveAnimations] = useState<Set<string>>(new Set());
+  const [activeAnimations, setActiveAnimations] = useState<Set<string>>(
+    new Set(),
+  );
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     event.stopPropagation();
@@ -97,24 +99,30 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   };
 
   // Function to animate a message between two nodes
-  const animateMessage = useCallback((fromNode: string, toNode: string) => {
-    const edgeId1 = `${fromNode}-${toNode}`;
-    const edgeId2 = `${toNode}-${fromNode}`;
+  const animateMessage = useCallback(
+    (fromNode: string, toNode: string) => {
+      const edgeId1 = `${fromNode}-${toNode}`;
+      const edgeId2 = `${toNode}-${fromNode}`;
 
-    // Find which edge exists
-    const edgeId = activeAnimations.has(edgeId1) || edges.some(e => e.id === edgeId1) ? edgeId1 : edgeId2;
+      // Find which edge exists
+      const edgeId =
+        activeAnimations.has(edgeId1) || edges.some((e) => e.id === edgeId1)
+          ? edgeId1
+          : edgeId2;
 
-    setActiveAnimations(prev => new Set(prev).add(edgeId));
+      setActiveAnimations((prev) => new Set(prev).add(edgeId));
 
-    // Remove animation after 2 seconds
-    setTimeout(() => {
-      setActiveAnimations(prev => {
-        const next = new Set(prev);
-        next.delete(edgeId);
-        return next;
-      });
-    }, 2000);
-  }, [edges, activeAnimations]);
+      // Remove animation after 2 seconds
+      setTimeout(() => {
+        setActiveAnimations((prev) => {
+          const next = new Set(prev);
+          next.delete(edgeId);
+          return next;
+        });
+      }, 3000);
+    },
+    [edges, activeAnimations],
+  );
 
   // Expose animation function via callback
   useEffect(() => {
@@ -387,7 +395,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
             ...node.data,
             isSelected: selectedNodeId === node.id,
           },
-        }))
+        })),
       );
     }
 
@@ -411,7 +419,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
               animated: isAnimated,
               style: {
                 stroke: isAnimated ? "#ff6b6b" : "#333",
-                strokeWidth: isAnimated ? 3 : 2
+                strokeWidth: isAnimated ? 3 : 2,
               },
             });
           }
@@ -420,7 +428,14 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     });
 
     setEdges(flowEdges);
-  }, [nodeData, selectedNodeId, hasInitialized, activeAnimations, setNodes, setEdges]);
+  }, [
+    nodeData,
+    selectedNodeId,
+    hasInitialized,
+    activeAnimations,
+    setNodes,
+    setEdges,
+  ]);
 
   return (
     <div
@@ -455,4 +470,3 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
 };
 
 export default TopologyDisplay;
-
