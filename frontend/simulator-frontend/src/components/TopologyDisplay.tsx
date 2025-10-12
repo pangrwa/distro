@@ -89,8 +89,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [activeAnimations, setActiveAnimations] = useState<Set<string>>(
-    new Set(),
+  const [activeAnimations, setActiveAnimations] = useState<Map<string, Set<'forward' | 'reverse'>>>(
+    new Map(),
   );
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
@@ -104,24 +104,40 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
       const edgeId1 = `${fromNode}-${toNode}`;
       const edgeId2 = `${toNode}-${fromNode}`;
 
-      // Find which edge exists
-      const edgeId =
-        activeAnimations.has(edgeId1) || edges.some((e) => e.id === edgeId1)
-          ? edgeId1
-          : edgeId2;
+      // Find which edge exists in the graph
+      const existingEdgeId = edges.some((e) => e.id === edgeId1)
+        ? edgeId1
+        : edgeId2;
 
-      setActiveAnimations((prev) => new Set(prev).add(edgeId));
+      // Determine direction: forward if existingEdge matches fromNode->toNode order
+      const direction: 'forward' | 'reverse' = existingEdgeId === edgeId1 ? 'forward' : 'reverse';
 
-      // Remove animation after 2 seconds
+      setActiveAnimations((prev) => {
+        const next = new Map(prev);
+        const directions = next.get(existingEdgeId) || new Set();
+        directions.add(direction);
+        next.set(existingEdgeId, directions);
+        return next;
+      });
+
+      // Remove animation after 3 seconds
       setTimeout(() => {
         setActiveAnimations((prev) => {
-          const next = new Set(prev);
-          next.delete(edgeId);
+          const next = new Map(prev);
+          const directions = next.get(existingEdgeId);
+          if (directions) {
+            directions.delete(direction);
+            if (directions.size === 0) {
+              next.delete(existingEdgeId);
+            } else {
+              next.set(existingEdgeId, directions);
+            }
+          }
           return next;
         });
       }, 3000);
     },
-    [edges, activeAnimations],
+    [edges],
   );
 
   // Expose animation function via callback
@@ -409,18 +425,26 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
 
           // Only add edge if reverse doesn't exist
           if (!flowEdges.some((e) => e.id === reverseEdgeId)) {
-            const isAnimated = activeAnimations.has(edgeId);
+            const directions = activeAnimations.get(edgeId) || new Set();
+            const hasForward = directions.has('forward');
+            const hasReverse = directions.has('reverse');
+            const hasBoth = hasForward && hasReverse;
 
             flowEdges.push({
               id: edgeId,
               source: node.id,
               target: targetId,
               type: "straight",
-              animated: isAnimated,
+              animated: hasForward || hasReverse,
               style: {
-                stroke: isAnimated ? "#ff6b6b" : "#333",
-                strokeWidth: isAnimated ? 3 : 2,
+                stroke: hasBoth ? "#9c27b0" : (hasForward || hasReverse) ? "#ff6b6b" : "#333",
+                strokeWidth: (hasForward || hasReverse) ? 3 : 2,
               },
+              label: hasBoth ? "⇄" : hasForward ? "→" : hasReverse ? "←" : undefined,
+              labelStyle: { fill: '#fff', fontWeight: 'bold', fontSize: 16 },
+              labelBgStyle: { fill: hasBoth ? "#9c27b0" : "#ff6b6b", fillOpacity: 0.8 },
+              labelBgPadding: [4, 4] as [number, number],
+              labelBgBorderRadius: 4,
             });
           }
         }
