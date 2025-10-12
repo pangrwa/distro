@@ -11,12 +11,75 @@ import ReactFlow, {
   Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { Pause, Play, Square } from "lucide-react";
 
 import { NodeData } from "../types/topology";
 import {
   findConnectedComponents,
   detectComponentTopology,
 } from "../utils/graphUtils";
+
+// API functions for node control
+const API_BASE_URL = "http://localhost:8080";
+
+const pauseNode = async (nodeId: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/simulation/node/pause`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body: nodeId,
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to pause node: ${await response.text()}`);
+    }
+    return await response.text();
+  } catch (error) {
+    console.error("Error pausing node:", error);
+    throw error;
+  }
+};
+
+const resumeNode = async (nodeId: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/simulation/node/resume`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body: nodeId,
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to resume node: ${await response.text()}`);
+    }
+    return await response.text();
+  } catch (error) {
+    console.error("Error resuming node:", error);
+    throw error;
+  }
+};
+
+const stopNode = async (nodeId: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/simulation/node/stop`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body: nodeId,
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to stop node: ${await response.text()}`);
+    }
+    return await response.text();
+  } catch (error) {
+    console.error("Error stopping node:", error);
+    throw error;
+  }
+};
+
+type NodeStatus = "running" | "paused" | "stopped";
 
 interface TopologyDisplayProps {
   nodes: NodeData[];
@@ -27,18 +90,78 @@ interface TopologyDisplayProps {
 
 const ReadOnlyNode: React.FC<any> = ({ data }) => {
   const isSelected = data.isSelected;
+  const nodeStatus: NodeStatus = data.status || "running";
+
+  const handlePause = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await pauseNode(data.label);
+      if (data.onStatusChange) {
+        data.onStatusChange(data.label, "paused");
+      }
+    } catch (error) {
+      alert(`Failed to pause node: ${error}`);
+    }
+  };
+
+  const handleResume = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await resumeNode(data.label);
+      if (data.onStatusChange) {
+        data.onStatusChange(data.label, "running");
+      }
+    } catch (error) {
+      alert(`Failed to resume node: ${error}`);
+    }
+  };
+
+  const handleStop = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to stop node ${data.label}? This node cannot be restarted once stopped.`)) {
+      return;
+    }
+    try {
+      await stopNode(data.label);
+      if (data.onStatusChange) {
+        data.onStatusChange(data.label, "stopped");
+      }
+    } catch (error) {
+      alert(`Failed to stop node: ${error}`);
+    }
+  };
+
+  // Determine border color based on status
+  const getBorderColor = () => {
+    if (nodeStatus === "paused") return "#ffc107"; // Yellow/amber for paused
+    if (nodeStatus === "stopped") return "#dc3545"; // Red for stopped
+    if (isSelected) return "#2196f3"; // Blue for selected
+    return "#28a745"; // Green for running
+  };
+
+  // Determine background color
+  const getBackgroundColor = () => {
+    if (nodeStatus === "paused") return "#fff8e1"; // Light yellow for paused
+    if (nodeStatus === "stopped") return "#ffebee"; // Light red for stopped
+    if (isSelected) return "#e3f2fd"; // Light blue for selected
+    return "#fff"; // Default white
+  };
+
+  // Check if node is stopped - if so, disable all controls
+  const isStopped = nodeStatus === "stopped";
 
   return (
     <div
       style={{
-        background: isSelected ? "#e3f2fd" : "#fff",
-        border: `2px solid ${isSelected ? "#2196f3" : "#333"}`,
+        background: getBackgroundColor(),
+        border: `3px solid ${getBorderColor()}`,
         borderRadius: "8px",
         padding: "10px",
-        minWidth: "120px",
+        minWidth: "140px",
         textAlign: "center",
         cursor: "pointer",
         transition: "all 0.2s ease",
+        opacity: isStopped ? 0.7 : 1,
       }}
     >
       <Handle type="target" position={Position.Top} />
@@ -56,10 +179,93 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
           background: "#f5f5f5",
           padding: "2px 6px",
           borderRadius: "4px",
+          marginBottom: "6px",
         }}
       >
         {data.program}
       </div>
+
+      {/* Status indicator */}
+      <div
+        style={{
+          fontSize: "9px",
+          color: getBorderColor(),
+          fontWeight: "bold",
+          marginBottom: "6px",
+          textTransform: "uppercase",
+        }}
+      >
+        {nodeStatus}
+      </div>
+
+      {/* Control buttons */}
+      <div
+        style={{
+          display: "flex",
+          gap: "4px",
+          justifyContent: "center",
+          marginTop: "6px",
+        }}
+      >
+        <button
+          onClick={handlePause}
+          disabled={isStopped}
+          title={isStopped ? "Node is stopped" : "Pause node"}
+          style={{
+            padding: "4px 6px",
+            background: isStopped ? "#ccc" : "#ffc107",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: isStopped ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            fontSize: "10px",
+            opacity: isStopped ? 0.5 : 1,
+          }}
+        >
+          <Pause size={12} />
+        </button>
+        <button
+          onClick={handleResume}
+          disabled={isStopped}
+          title={isStopped ? "Node is stopped" : "Resume node"}
+          style={{
+            padding: "4px 6px",
+            background: isStopped ? "#ccc" : "#28a745",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: isStopped ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            fontSize: "10px",
+            opacity: isStopped ? 0.5 : 1,
+          }}
+        >
+          <Play size={12} />
+        </button>
+        <button
+          onClick={handleStop}
+          disabled={isStopped}
+          title={isStopped ? "Node already stopped" : "Stop node (cannot be restarted)"}
+          style={{
+            padding: "4px 6px",
+            background: isStopped ? "#ccc" : "#dc3545",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: isStopped ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            fontSize: "10px",
+            opacity: isStopped ? 0.5 : 1,
+          }}
+        >
+          <Square size={12} />
+        </button>
+      </div>
+
       {isSelected && (
         <div
           style={{
@@ -92,6 +298,18 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   const [activeAnimations, setActiveAnimations] = useState<Map<string, Set<'forward' | 'reverse'>>>(
     new Map(),
   );
+  const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(
+    new Map(),
+  );
+
+  // Handler for node status changes
+  const handleNodeStatusChange = useCallback((nodeId: string, status: NodeStatus) => {
+    setNodeStatuses((prev) => {
+      const next = new Map(prev);
+      next.set(nodeId, status);
+      return next;
+    });
+  }, []);
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     event.stopPropagation();
@@ -395,6 +613,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
           label: node.id,
           program: node.program,
           isSelected: selectedNodeId === node.id,
+          status: nodeStatuses.get(node.id) || "running",
+          onStatusChange: handleNodeStatusChange,
         },
         draggable: true,
         selectable: true,
@@ -403,13 +623,15 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
       setNodes(flowNodes);
       setHasInitialized(true);
     } else {
-      // Only update the selection state without changing positions
+      // Only update the selection state and status without changing positions
       setNodes((currentNodes) =>
         currentNodes.map((node) => ({
           ...node,
           data: {
             ...node.data,
             isSelected: selectedNodeId === node.id,
+            status: nodeStatuses.get(node.id) || "running",
+            onStatusChange: handleNodeStatusChange,
           },
         })),
       );
@@ -457,6 +679,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     selectedNodeId,
     hasInitialized,
     activeAnimations,
+    nodeStatuses,
+    handleNodeStatusChange,
     setNodes,
     setEdges,
   ]);
