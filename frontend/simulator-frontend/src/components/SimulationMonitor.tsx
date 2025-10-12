@@ -212,6 +212,11 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
         setIsSimulationRunning(true);
         setSimulationStatus("Simulation started successfully");
         addGlobalMessage(`Simulation started: ${result}`);
+
+        // Set all nodes to running status
+        if ((window as any).__setAllNodesToRunning) {
+          (window as any).__setAllNodesToRunning();
+        }
       } else {
         setSimulationStatus("Failed to start simulation");
         addGlobalMessage(`Error starting simulation: ${result}`);

@@ -219,6 +219,7 @@ const SimulationRunner: React.FC = () => {
                   selectedNodeId={selectedNodeId}
                   onNodeClick={handleNodeClick}
                   onMessageAnimation={handleMessageAnimation}
+                  onSimulationStart={() => {}}
                 />
               </div>
             </div>

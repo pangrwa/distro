@@ -86,14 +86,16 @@ interface TopologyDisplayProps {
   selectedNodeId?: string;
   onNodeClick?: (nodeId: string) => void;
   onMessageAnimation?: (fromNode: string, toNode: string) => void;
+  onSimulationStart?: () => void;
 }
 
 const ReadOnlyNode: React.FC<any> = ({ data }) => {
   const isSelected = data.isSelected;
-  const nodeStatus: NodeStatus = data.status || "running";
+  const nodeStatus: NodeStatus = data.status || "stopped";
 
   const handlePause = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (nodeStatus !== "running") return;
     try {
       await pauseNode(data.label);
       if (data.onStatusChange) {
@@ -106,6 +108,7 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
 
   const handleResume = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (nodeStatus !== "paused") return;
     try {
       await resumeNode(data.label);
       if (data.onStatusChange) {
@@ -134,7 +137,7 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
   // Determine border color based on status
   const getBorderColor = () => {
     if (nodeStatus === "paused") return "#ffc107"; // Yellow/amber for paused
-    if (nodeStatus === "stopped") return "#dc3545"; // Red for stopped
+    if (nodeStatus === "stopped") return "#6c757d"; // Gray for stopped
     if (isSelected) return "#2196f3"; // Blue for selected
     return "#28a745"; // Green for running
   };
@@ -142,13 +145,16 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
   // Determine background color
   const getBackgroundColor = () => {
     if (nodeStatus === "paused") return "#fff8e1"; // Light yellow for paused
-    if (nodeStatus === "stopped") return "#ffebee"; // Light red for stopped
+    if (nodeStatus === "stopped") return "#f8f9fa"; // Light gray for stopped
     if (isSelected) return "#e3f2fd"; // Light blue for selected
     return "#fff"; // Default white
   };
 
-  // Check if node is stopped - if so, disable all controls
+  // Check button enable states
   const isStopped = nodeStatus === "stopped";
+  const canPause = nodeStatus === "running";
+  const canResume = nodeStatus === "paused";
+  const canStop = nodeStatus === "running" || nodeStatus === "paused";
 
   return (
     <div
@@ -209,57 +215,73 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
       >
         <button
           onClick={handlePause}
-          disabled={isStopped}
-          title={isStopped ? "Node is stopped" : "Pause node"}
+          disabled={!canPause}
+          title={
+            !canPause
+              ? nodeStatus === "stopped"
+                ? "Node is stopped"
+                : "Node must be running to pause"
+              : "Pause node"
+          }
           style={{
             padding: "4px 6px",
-            background: isStopped ? "#ccc" : "#ffc107",
+            background: canPause ? "#ffc107" : "#ccc",
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: isStopped ? "not-allowed" : "pointer",
+            cursor: canPause ? "pointer" : "not-allowed",
             display: "flex",
             alignItems: "center",
             fontSize: "10px",
-            opacity: isStopped ? 0.5 : 1,
+            opacity: canPause ? 1 : 0.5,
           }}
         >
           <Pause size={12} />
         </button>
         <button
           onClick={handleResume}
-          disabled={isStopped}
-          title={isStopped ? "Node is stopped" : "Resume node"}
+          disabled={!canResume}
+          title={
+            !canResume
+              ? nodeStatus === "stopped"
+                ? "Node is stopped"
+                : "Node must be paused to resume"
+              : "Resume node"
+          }
           style={{
             padding: "4px 6px",
-            background: isStopped ? "#ccc" : "#28a745",
+            background: canResume ? "#28a745" : "#ccc",
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: isStopped ? "not-allowed" : "pointer",
+            cursor: canResume ? "pointer" : "not-allowed",
             display: "flex",
             alignItems: "center",
             fontSize: "10px",
-            opacity: isStopped ? 0.5 : 1,
+            opacity: canResume ? 1 : 0.5,
           }}
         >
           <Play size={12} />
         </button>
         <button
           onClick={handleStop}
-          disabled={isStopped}
-          title={isStopped ? "Node already stopped" : "Stop node (cannot be restarted)"}
+          disabled={!canStop}
+          title={
+            !canStop
+              ? "Node already stopped"
+              : "Stop node (cannot be restarted)"
+          }
           style={{
             padding: "4px 6px",
-            background: isStopped ? "#ccc" : "#dc3545",
+            background: canStop ? "#dc3545" : "#ccc",
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            cursor: isStopped ? "not-allowed" : "pointer",
+            cursor: canStop ? "pointer" : "not-allowed",
             display: "flex",
             alignItems: "center",
             fontSize: "10px",
-            opacity: isStopped ? 0.5 : 1,
+            opacity: canStop ? 1 : 0.5,
           }}
         >
           <Square size={12} />
@@ -291,6 +313,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   selectedNodeId,
   onNodeClick,
   onMessageAnimation,
+  onSimulationStart,
 }) => {
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
@@ -310,6 +333,24 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
       return next;
     });
   }, []);
+
+  // Function to set all nodes to running when simulation starts
+  const setAllNodesToRunning = useCallback(() => {
+    setNodeStatuses((prev) => {
+      const next = new Map(prev);
+      nodeData.forEach((node) => {
+        next.set(node.id, "running");
+      });
+      return next;
+    });
+  }, [nodeData]);
+
+  // Expose the function to parent via window object
+  useEffect(() => {
+    if (onSimulationStart) {
+      (window as any).__setAllNodesToRunning = setAllNodesToRunning;
+    }
+  }, [setAllNodesToRunning, onSimulationStart]);
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     event.stopPropagation();
@@ -613,7 +654,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
           label: node.id,
           program: node.program,
           isSelected: selectedNodeId === node.id,
-          status: nodeStatuses.get(node.id) || "running",
+          status: nodeStatuses.get(node.id) || "stopped",
           onStatusChange: handleNodeStatusChange,
         },
         draggable: true,
@@ -630,7 +671,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
           data: {
             ...node.data,
             isSelected: selectedNodeId === node.id,
-            status: nodeStatuses.get(node.id) || "running",
+            status: nodeStatuses.get(node.id) || "stopped",
             onStatusChange: handleNodeStatusChange,
           },
         })),
