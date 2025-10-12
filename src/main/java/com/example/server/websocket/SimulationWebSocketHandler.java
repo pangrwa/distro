@@ -34,10 +34,12 @@ public class SimulationWebSocketHandler extends TextWebSocketHandler {
   public static void broadcast(String message) {
     for (WebSocketSession session : sessions) {
       if (session.isOpen()) {
-        try {
-          session.sendMessage(new TextMessage(message));
-        } catch (Exception e) {
-          logger.error("Error broadcasting to session {}: {}", session.getId(), e.getMessage());
+        synchronized (session) {
+          try {
+            session.sendMessage(new TextMessage(message));
+          } catch (Exception e) {
+            logger.error("Error broadcasting to session {}: {}", session.getId(), e.getMessage());
+          }
         }
       }
     }

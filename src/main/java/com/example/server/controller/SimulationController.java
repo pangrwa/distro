@@ -83,6 +83,7 @@ public class SimulationController {
       if (tempFile != null && tempFile.exists()) {
         tempFile.deleteOnExit();
       }
+      simulatorProcess = null;
       logger.info("Simulation stopped");
 
       return ResponseEntity.ok("Simulation stopped");
