@@ -13,9 +13,11 @@ import javax.annotation.PreDestroy;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ import com.example.server.websocket.SimulationWebSocketHandler;
 @RestController
 public class SimulationController {
   private Process simulatorProcess;
+  private BufferedWriter processWriter;
   private File tempFile;
   private static final Logger logger = LoggerFactory.getLogger(SimulationController.class);
 
@@ -60,11 +63,81 @@ public class SimulationController {
       pb.redirectError(ProcessBuilder.Redirect.appendTo(logFile));
 
       simulatorProcess = pb.start();
+      processWriter = new BufferedWriter(new OutputStreamWriter(simulatorProcess.getOutputStream()));
       logger.info("Simulation started with config: {}", topologyPath);
 
       return ResponseEntity.ok("Simulation started with config: " + tempFile.toString());
     } catch (IOException | InterruptedException e) {
       String errorMsg = "Failed to start simulation: " + e.getMessage();
+      return ResponseEntity.status(500).body(errorMsg);
+    }
+  }
+
+  @PostMapping("/api/simulation/node/pause")
+  public ResponseEntity<String> pauseNode(@RequestBody String nodeId) {
+    try {
+      if (simulatorProcess == null || !simulatorProcess.isAlive()) {
+        return ResponseEntity.status(500).body("No simulation is currently running");
+      }
+      if (processWriter == null) {
+        return ResponseEntity.status(500).body("Cannot communicate with simulator process");
+      }
+
+      processWriter.write("pause " + nodeId);
+      processWriter.newLine();
+      processWriter.flush();
+      logger.info("Sent pause command for node: {}", nodeId);
+
+      return ResponseEntity.ok("Pause command sent for node: " + nodeId);
+    } catch (IOException e) {
+      String errorMsg = "Failed to pause node: " + e.getMessage();
+      logger.error(errorMsg, e);
+      return ResponseEntity.status(500).body(errorMsg);
+    }
+  }
+
+  @PostMapping("/api/simulation/node/resume")
+  public ResponseEntity<String> resumeNode(@RequestBody String nodeId) {
+    try {
+      if (simulatorProcess == null || !simulatorProcess.isAlive()) {
+        return ResponseEntity.status(500).body("No simulation is currently running");
+      }
+      if (processWriter == null) {
+        return ResponseEntity.status(500).body("Cannot communicate with simulator process");
+      }
+
+      processWriter.write("resume " + nodeId);
+      processWriter.newLine();
+      processWriter.flush();
+      logger.info("Sent resume command for node: {}", nodeId);
+
+      return ResponseEntity.ok("Resume command sent for node: " + nodeId);
+    } catch (IOException e) {
+      String errorMsg = "Failed to resume node: " + e.getMessage();
+      logger.error(errorMsg, e);
+      return ResponseEntity.status(500).body(errorMsg);
+    }
+  }
+
+  @PostMapping("/api/simulation/node/stop")
+  public ResponseEntity<String> stopNode(@RequestBody String nodeId) {
+    try {
+      if (simulatorProcess == null || !simulatorProcess.isAlive()) {
+        return ResponseEntity.status(500).body("No simulation is currently running");
+      }
+      if (processWriter == null) {
+        return ResponseEntity.status(500).body("Cannot communicate with simulator process");
+      }
+
+      processWriter.write("stop " + nodeId);
+      processWriter.newLine();
+      processWriter.flush();
+      logger.info("Sent stop command for node: {}", nodeId);
+
+      return ResponseEntity.ok("Stop command sent for node: " + nodeId);
+    } catch (IOException e) {
+      String errorMsg = "Failed to stop node: " + e.getMessage();
+      logger.error(errorMsg, e);
       return ResponseEntity.status(500).body(errorMsg);
     }
   }
@@ -82,6 +155,10 @@ public class SimulationController {
       simulatorProcess.waitFor();
       if (tempFile != null && tempFile.exists()) {
         tempFile.deleteOnExit();
+      }
+      if (processWriter != null) {
+        processWriter.close();
+        processWriter = null;
       }
       simulatorProcess = null;
       logger.info("Simulation stopped");

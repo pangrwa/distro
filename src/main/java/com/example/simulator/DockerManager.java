@@ -189,13 +189,21 @@ public class DockerManager {
       String containerId = entry.getValue();
 
       try {
-        dockerClient.stopContainerCmd(containerId).exec();
-        System.out.println("Stopped container for " + nodeId);
+        // Try to stop the container first (ignore if already stopped)
+        try {
+          dockerClient.stopContainerCmd(containerId).exec();
+          System.out.println("Stopped container for " + nodeId);
+        } catch (Exception e) {
+          System.out.println("Container " + nodeId + " already stopped or not running");
+        }
 
-        dockerClient.removeContainerCmd(containerId).exec();
+        // Force remove the container regardless of state
+        dockerClient.removeContainerCmd(containerId)
+            .withForce(true)
+            .exec();
         System.out.println("Removed container for " + nodeId);
       } catch (Exception e) {
-        // Container might already be stopped/removed
+        // Container might already be removed
         System.out.println("Error cleaning up container for " + nodeId + ": " + e.getMessage());
       }
     }
