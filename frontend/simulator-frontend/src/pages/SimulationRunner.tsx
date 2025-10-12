@@ -171,17 +171,30 @@ const SimulationRunner: React.FC = () => {
                   marginBottom: "20px",
                 }}
               >
-                <h3>Current Topology Visualization</h3>
+                <div>
+                  <h3 style={{ marginBottom: "8px" }}>
+                    Current Topology Visualization
+                  </h3>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "20px",
+                      fontSize: "13px",
+                      color: "#666",
+                    }}
+                  >
+                    <div>
+                      <strong>Drop Rate:</strong>{" "}
+                      {(jitterConfig.drop_rate * 100).toFixed(1)}%
+                    </div>
+                    <div>
+                      <strong>Delay:</strong> {jitterConfig.delay_ms}ms
+                    </div>
+                  </div>
+                </div>
                 <div
                   style={{ display: "flex", alignItems: "center", gap: "15px" }}
                 >
-                  <div style={{ fontSize: "14px", color: "#666" }}>
-                    Nodes: {nodes.length} | Connections:{" "}
-                    {nodes.reduce(
-                      (acc, node) => acc + node.connections.length,
-                      0,
-                    ) / 2}
-                  </div>
                   <button
                     onClick={clearTopology}
                     style={{
@@ -207,29 +220,6 @@ const SimulationRunner: React.FC = () => {
                   onNodeClick={handleNodeClick}
                   onMessageAnimation={handleMessageAnimation}
                 />
-              </div>
-
-              {/* Configuration Summary */}
-              <div
-                style={{
-                  marginTop: "20px",
-                  padding: "15px",
-                  background: "#f8f9fa",
-                  borderRadius: "4px",
-                }}
-              >
-                <h4 style={{ marginBottom: "10px", color: "#333" }}>
-                  Jitter Configuration
-                </h4>
-                <div style={{ display: "flex", gap: "20px", fontSize: "14px" }}>
-                  <div>
-                    <strong>Drop Rate:</strong>{" "}
-                    {(jitterConfig.drop_rate * 100).toFixed(1)}%
-                  </div>
-                  <div>
-                    <strong>Delay:</strong> {jitterConfig.delay_ms}ms
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -276,4 +266,3 @@ const SimulationRunner: React.FC = () => {
 };
 
 export default SimulationRunner;
-
