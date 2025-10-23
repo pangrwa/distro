@@ -30,7 +30,7 @@ export const generateYaml = (
           },
         ],
       };
-    } else {
+    } else if (topology === "custom") {
       config = {
         ...config,
         individual_nodes: [
@@ -40,6 +40,18 @@ export const generateYaml = (
             program: node.program,
             connections: node.connections,
           })),
+        ],
+      };
+    } else if (topology === "single") {
+      config = {
+        ...config,
+        individual_nodes: [
+          ...(config.individual_nodes ?? []),
+          {
+            nid: component[0].id,
+            program: component[0].program,
+            connections: component[0].connections,
+          },
         ],
       };
     }

@@ -37,24 +37,33 @@ export const findConnectedComponents = (nodes: NodeData[]): NodeData[][] => {
 export const detectComponentTopology = (component: NodeData[]) => {
   if (component.length <= 1) return "single";
 
-  const isRing = component.every((node) => {
-    return (
-      node.connections.length === 1 ||
-      (node.connections.length === 2 && component.length > 2)
-    );
-  });
+  // Check if it's a ring: all nodes have exactly 2 connections
+  const isRing = component.every((node) => node.connections.length === 2);
+
+  if (isRing) return "ring";
+
+  // Check if it's a line: exactly 2 nodes with 1 connection (endpoints), rest with 2
+  const nodesWithOneConnection = component.filter(
+    (node) => node.connections.length === 1
+  );
+  const nodesWithTwoConnections = component.filter(
+    (node) => node.connections.length === 2
+  );
 
   const isLine =
-    component.some((node) => node.connections.length === 1) &&
-    component.some((node) => node.connections.length === 2);
+    nodesWithOneConnection.length === 2 &&
+    nodesWithTwoConnections.length === component.length - 2 &&
+    component.length >= 2;
 
-  const avgConnections =
-    component.reduce((sum, node) => sum + node.connections.length, 0) /
-    component.length;
-  const isFullyConnected = avgConnections > component.length * 0.7;
+  if (isLine) return "line";
 
-  if (isRing && !isLine) return "ring";
-  if (isLine && !isFullyConnected) return "line";
+  // Check if it's fully connected: every node connects to all others
+  const isFullyConnected = component.every(
+    (node) => node.connections.length === component.length - 1
+  );
+
   if (isFullyConnected) return "fully_connected";
+
+  // Otherwise it's a custom topology
   return "custom";
 };
