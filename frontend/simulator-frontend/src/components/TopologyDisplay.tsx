@@ -19,6 +19,39 @@ import {
   detectComponentTopology,
 } from "../utils/graphUtils";
 
+// CSS for animated edge dashes
+const animationStyles = `
+  @keyframes dashForward {
+    0% {
+      stroke-dashoffset: 10;
+    }
+    100% {
+      stroke-dashoffset: -10;
+    }
+  }
+
+  @keyframes dashReverse {
+    0% {
+      stroke-dashoffset: -10;
+    }
+    100% {
+      stroke-dashoffset: 10;
+    }
+  }
+
+  @keyframes dashBothDirections {
+    0% {
+      stroke-dashoffset: 10;
+    }
+    50% {
+      stroke-dashoffset: -10;
+    }
+    100% {
+      stroke-dashoffset: 10;
+    }
+  }
+`;
+
 // API functions for node control
 const API_BASE_URL = "http://localhost:8080";
 
@@ -328,6 +361,20 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(
     new Map(),
   );
+
+  // Inject animation styles on component mount
+  useEffect(() => {
+    const styleId = "topology-animation-styles";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = animationStyles;
+      document.head.appendChild(style);
+    }
+    return () => {
+      // Clean up is optional - leaving styles in place is fine
+    };
+  }, []);
 
   // Handler for node status changes
   const handleNodeStatusChange = useCallback(
@@ -700,35 +747,37 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
             const hasForward = directions.has("forward");
             const hasReverse = directions.has("reverse");
             const hasBoth = hasForward && hasReverse;
+            const isAnimating = hasForward || hasReverse;
+
+            // Determine animation name based on direction
+            let animationName = "none";
+            if (isAnimating) {
+              if (hasBoth) {
+                animationName = "dashBothDirections";
+              } else if (hasForward) {
+                animationName = "dashForward";
+              } else if (hasReverse) {
+                animationName = "dashReverse";
+              }
+            }
 
             flowEdges.push({
               id: edgeId,
               source: node.id,
               target: targetId,
               type: "straight",
-              animated: hasForward || hasReverse,
+              animated: false, // We're handling animation with CSS
               style: {
                 stroke: hasBoth
                   ? "#9c27b0"
-                  : hasForward || hasReverse
+                  : isAnimating
                     ? "#ff6b6b"
                     : "#333",
-                strokeWidth: hasForward || hasReverse ? 3 : 2,
-              },
-              label: hasBoth
-                ? "⇄"
-                : hasForward
-                  ? "→"
-                  : hasReverse
-                    ? "←"
-                    : undefined,
-              labelStyle: { fill: "#fff", fontWeight: "bold", fontSize: 16 },
-              labelBgStyle: {
-                fill: hasBoth ? "#9c27b0" : "#ff6b6b",
-                fillOpacity: 0.8,
-              },
-              labelBgPadding: [4, 4] as [number, number],
-              labelBgBorderRadius: 4,
+                strokeWidth: isAnimating ? 3 : 2,
+                strokeDasharray: isAnimating ? "5,5" : "0",
+                strokeDashoffset: "0",
+                animation: `${animationName} 0.5s linear infinite`,
+              } as React.CSSProperties,
             });
           }
         }
