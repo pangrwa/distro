@@ -87,16 +87,18 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
         const jsonStr = content.substring("Received: ".length);
         const messageData = JSON.parse(jsonStr);
 
-        // Trigger animation if we have fromNode and toNode
-        if (messageData.fromNode && messageData.toNode && onMessageAnimation) {
-          onMessageAnimation(messageData.fromNode, messageData.toNode);
-        }
-
         // Add to both fromNode and toNode inboxes
-        if (messageData.fromNode) {
+        if (messageData.fromNode && messageData.type === "SENT") {
           addMessageToNode(messageData.fromNode, content);
+          if (onMessageAnimation) {
+            onMessageAnimation(messageData.fromNode, messageData.toNode);
+          }
         }
-        if (messageData.toNode && messageData.toNode !== messageData.fromNode) {
+        if (
+          messageData.toNode &&
+          messageData.toNode !== messageData.fromNode &&
+          messageData.type === "RECEIVED"
+        ) {
           addMessageToNode(messageData.toNode, content);
         }
       } else {

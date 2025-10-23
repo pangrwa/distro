@@ -121,7 +121,11 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
 
   const handleStop = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to stop node ${data.label}? This node cannot be restarted once stopped.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to stop node ${data.label}? This node cannot be restarted once stopped.`,
+      )
+    ) {
       return;
     }
     try {
@@ -318,21 +322,24 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
   const [nodes, setNodes, onNodesChangeFlow] = useNodesState([]);
   const [edges, setEdges] = useEdgesState([]);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [activeAnimations, setActiveAnimations] = useState<Map<string, Set<'forward' | 'reverse'>>>(
-    new Map(),
-  );
+  const [activeAnimations, setActiveAnimations] = useState<
+    Map<string, Set<"forward" | "reverse">>
+  >(new Map());
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(
     new Map(),
   );
 
   // Handler for node status changes
-  const handleNodeStatusChange = useCallback((nodeId: string, status: NodeStatus) => {
-    setNodeStatuses((prev) => {
-      const next = new Map(prev);
-      next.set(nodeId, status);
-      return next;
-    });
-  }, []);
+  const handleNodeStatusChange = useCallback(
+    (nodeId: string, status: NodeStatus) => {
+      setNodeStatuses((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, status);
+        return next;
+      });
+    },
+    [],
+  );
 
   // Function to set all nodes to running when simulation starts
   const setAllNodesToRunning = useCallback(() => {
@@ -369,7 +376,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
         : edgeId2;
 
       // Determine direction: forward if existingEdge matches fromNode->toNode order
-      const direction: 'forward' | 'reverse' = existingEdgeId === edgeId1 ? 'forward' : 'reverse';
+      const direction: "forward" | "reverse" =
+        existingEdgeId === edgeId1 ? "forward" : "reverse";
 
       setActiveAnimations((prev) => {
         const next = new Map(prev);
@@ -689,8 +697,8 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
           // Only add edge if reverse doesn't exist
           if (!flowEdges.some((e) => e.id === reverseEdgeId)) {
             const directions = activeAnimations.get(edgeId) || new Set();
-            const hasForward = directions.has('forward');
-            const hasReverse = directions.has('reverse');
+            const hasForward = directions.has("forward");
+            const hasReverse = directions.has("reverse");
             const hasBoth = hasForward && hasReverse;
 
             flowEdges.push({
@@ -700,12 +708,25 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
               type: "straight",
               animated: hasForward || hasReverse,
               style: {
-                stroke: hasBoth ? "#9c27b0" : (hasForward || hasReverse) ? "#ff6b6b" : "#333",
-                strokeWidth: (hasForward || hasReverse) ? 3 : 2,
+                stroke: hasBoth
+                  ? "#9c27b0"
+                  : hasForward || hasReverse
+                    ? "#ff6b6b"
+                    : "#333",
+                strokeWidth: hasForward || hasReverse ? 3 : 2,
               },
-              label: hasBoth ? "⇄" : hasForward ? "→" : hasReverse ? "←" : undefined,
-              labelStyle: { fill: '#fff', fontWeight: 'bold', fontSize: 16 },
-              labelBgStyle: { fill: hasBoth ? "#9c27b0" : "#ff6b6b", fillOpacity: 0.8 },
+              label: hasBoth
+                ? "⇄"
+                : hasForward
+                  ? "→"
+                  : hasReverse
+                    ? "←"
+                    : undefined,
+              labelStyle: { fill: "#fff", fontWeight: "bold", fontSize: 16 },
+              labelBgStyle: {
+                fill: hasBoth ? "#9c27b0" : "#ff6b6b",
+                fillOpacity: 0.8,
+              },
               labelBgPadding: [4, 4] as [number, number],
               labelBgBorderRadius: 4,
             });
