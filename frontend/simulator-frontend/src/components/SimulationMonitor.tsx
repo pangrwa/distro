@@ -49,7 +49,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
     };
     idRef.current += 1;
 
-    setNodeMessages(prev => {
+    setNodeMessages((prev) => {
       const currentMessages = prev[nodeId] || [];
       const updatedMessages = [...currentMessages, message];
 
@@ -58,7 +58,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
 
       return {
         ...prev,
-        [nodeId]: limitedMessages
+        [nodeId]: limitedMessages,
       };
     });
   };
@@ -72,7 +72,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
     };
     idRef.current += 1;
 
-    setGlobalMessages(prev => {
+    setGlobalMessages((prev) => {
       const updatedMessages = [...prev, message];
       // Keep only the latest 50 global messages
       return updatedMessages.slice(-50);
@@ -83,8 +83,8 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
   const parseAndDistributeMessage = (content: string) => {
     try {
       // Check if this is a received message with JSON content
-      if (content.startsWith('Received: ')) {
-        const jsonStr = content.substring('Received: '.length);
+      if (content.startsWith("Received: ")) {
+        const jsonStr = content.substring("Received: ".length);
         const messageData = JSON.parse(jsonStr);
 
         // Trigger animation if we have fromNode and toNode
@@ -160,7 +160,6 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
     }
   };
 
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,9 +168,9 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
   const clearMessages = () => {
     if (selectedNodeId) {
       // Clear only the selected node's messages
-      setNodeMessages(prev => ({
+      setNodeMessages((prev) => ({
         ...prev,
-        [selectedNodeId]: []
+        [selectedNodeId]: [],
       }));
     } else {
       // Clear global messages when no node is selected
@@ -461,13 +460,16 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
           >
             <div>
               <h4 style={{ margin: 0, fontSize: "14px", color: "#666" }}>
-                {selectedNodeId ? `Messages for ${selectedNodeId}` : "Global Messages"}
+                {selectedNodeId
+                  ? `Messages for ${selectedNodeId}`
+                  : "Global Messages"}
               </h4>
-              <div style={{ fontSize: "12px", color: "#666", marginTop: "2px" }}>
+              <div
+                style={{ fontSize: "12px", color: "#666", marginTop: "2px" }}
+              >
                 {selectedNodeId
                   ? `Personal inbox (max ${MAX_MESSAGES_PER_NODE} messages)`
-                  : "System messages and connection status"
-                }
+                  : "System messages and connection status"}
               </div>
             </div>
             <div style={{ display: "flex", gap: "6px" }}>
@@ -528,8 +530,7 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
               >
                 {selectedNodeId
                   ? `No messages in ${selectedNodeId}'s inbox yet. Start simulation to see node-specific messages.`
-                  : "No global messages yet. Connect to WebSocket and start simulation to see system messages."
-                }
+                  : "No global messages yet. Connect to WebSocket and start simulation to see system messages."}
               </div>
             ) : (
               getMessagesToDisplay().map((message) => (
@@ -540,7 +541,9 @@ const SimulationMonitor: React.FC<SimulationMonitorProps> = ({
                     padding: "6px",
                     background: "white",
                     borderRadius: "3px",
-                    borderLeft: selectedNodeId ? "2px solid #2196f3" : "2px solid #007bff",
+                    borderLeft: selectedNodeId
+                      ? "2px solid #2196f3"
+                      : "2px solid #007bff",
                   }}
                 >
                   <div
