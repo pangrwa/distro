@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Plus, Download, Upload, Trash2 } from "lucide-react";
+import { Plus, Download, Upload, Trash2, X } from "lucide-react";
 import CreatableSelect from "react-select/creatable";
+import { components } from "react-select";
 import { NodeData, TopologyConfig, JitterConfig } from "../types/topology";
 
 interface TopologyPanelProps {
@@ -46,6 +47,37 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
     line: 0,
     fully_connected: 0,
   });
+
+  // Custom option component with delete button
+  const CustomOption = (props: any) => (
+    <components.Option {...props}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+        <span>{props.label}</span>
+        {props.data.value !== "EchoAlgorithm" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveAlgorithm(props.data);
+            }}
+            style={{
+              padding: "2px 6px",
+              backgroundColor: "#ff4444",
+              color: "white",
+              border: "none",
+              borderRadius: "3px",
+              cursor: "pointer",
+              fontSize: "11px",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
+    </components.Option>
+  );
 
   // Handle creating new algorithm options
   const handleCreateAlgorithm = (inputValue: string) => {
@@ -253,6 +285,7 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
               options={algorithms}
               isClearable={false}
               placeholder="Select or create algorithm"
+              components={{ Option: CustomOption }}
               styles={{
                 container: (base) => ({
                   ...base,
@@ -343,6 +376,7 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
               options={algorithms}
               isClearable={false}
               placeholder="Select or create algorithm"
+              components={{ Option: CustomOption }}
               styles={{
                 container: (base) => ({
                   ...base,
@@ -391,45 +425,6 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
               {errorMessage}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Algorithm Management */}
-      <div style={{ marginBottom: "20px" }}>
-        <h4>Available Algorithms</h4>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          {algorithms.map((algo) => (
-            <div
-              key={algo.value}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "6px 12px",
-                backgroundColor: "#e0e0e0",
-                borderRadius: "4px",
-                fontSize: "12px",
-              }}
-            >
-              <span>{algo.label}</span>
-              {algo.value !== "EchoAlgorithm" && (
-                <button
-                  onClick={() => handleRemoveAlgorithm(algo)}
-                  style={{
-                    padding: "2px 6px",
-                    backgroundColor: "#ff4444",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "3px",
-                    cursor: "pointer",
-                    fontSize: "11px",
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
         </div>
       </div>
 
