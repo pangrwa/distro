@@ -182,7 +182,7 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
   // Determine background color
   const getBackgroundColor = () => {
     if (nodeStatus === "paused") return "#fff8e1"; // Light yellow for paused
-    if (nodeStatus === "stopped") return "#f8f9fa"; // Light gray for stopped
+    if (nodeStatus === "stopped") return "#e8e8e8"; // Desaturated gray for stopped
     if (isSelected) return "#e3f2fd"; // Light blue for selected
     return "#fff"; // Default white
   };
@@ -204,22 +204,26 @@ const ReadOnlyNode: React.FC<any> = ({ data }) => {
         textAlign: "center",
         cursor: "pointer",
         transition: "all 0.2s ease",
-        opacity: isStopped ? 0.7 : 1,
       }}
     >
       <Handle type="target" position={Position.Top} />
       <Handle type="source" position={Position.Bottom} />
 
       <div
-        style={{ fontWeight: "bold", marginBottom: "4px", fontSize: "14px" }}
+        style={{
+          fontWeight: "bold",
+          marginBottom: "4px",
+          fontSize: "14px",
+          color: isStopped ? "#999" : "#000",
+        }}
       >
         {data.label}
       </div>
       <div
         style={{
           fontSize: "11px",
-          color: "#666",
-          background: "#f5f5f5",
+          color: isStopped ? "#888" : "#666",
+          background: isStopped ? "#ddd" : "#f5f5f5",
           padding: "2px 6px",
           borderRadius: "4px",
           marginBottom: "6px",
