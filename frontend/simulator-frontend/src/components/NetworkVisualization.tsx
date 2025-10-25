@@ -375,7 +375,7 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({
   );
 
   return (
-    <div style={{ width: "100%", height: "500px" }}>
+    <div style={{ width: "100%", height: "100%" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

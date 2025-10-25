@@ -138,7 +138,7 @@ const SimulationRunner: React.FC = () => {
             style={{
               display: "flex",
               gap: "20px",
-              height: "calc(100vh - 200px)",
+              height: "calc(100vh - 180px)",
             }}
           >
             {/* Left Panel - Simulation Monitor */}
@@ -213,7 +213,7 @@ const SimulationRunner: React.FC = () => {
               </div>
 
               {/* Topology Display */}
-              <div style={{ height: "calc(100% - 80px)", minHeight: "400px" }}>
+              <div style={{ height: "calc(100% - 100px)", overflow: "hidden" }}>
                 <TopologyDisplay
                   nodes={nodes}
                   selectedNodeId={selectedNodeId}

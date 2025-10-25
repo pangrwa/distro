@@ -4,11 +4,7 @@ import { ArrowRight } from "lucide-react";
 import NetworkVisualization from "../components/NetworkVisualization";
 import TopologyPanel from "../components/TopologyPanel";
 import { NodeData, JitterConfig } from "../types/topology";
-import {
-  generateYaml,
-  parseYaml,
-  downloadYaml,
-} from "../utils/yamlGenerator";
+import { generateYaml, parseYaml, downloadYaml } from "../utils/yamlGenerator";
 
 const TopologyDesigner: React.FC = () => {
   const [nodes, setNodes] = useState<NodeData[]>([
@@ -52,7 +48,7 @@ const TopologyDesigner: React.FC = () => {
       jitterConfig,
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem('currentTopology', JSON.stringify(topology));
+    localStorage.setItem("currentTopology", JSON.stringify(topology));
   };
 
   const handleProceedToSimulation = () => {
@@ -103,8 +99,11 @@ const TopologyDesigner: React.FC = () => {
             }}
           >
             <h4>Ready to Run Simulation?</h4>
-            <p style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}>
-              Once you're satisfied with your topology design, proceed to the simulation runner.
+            <p
+              style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}
+            >
+              Once you're satisfied with your topology design, proceed to the
+              simulation runner.
             </p>
             <Link
               to="/simulation"
@@ -138,32 +137,22 @@ const TopologyDesigner: React.FC = () => {
             border: "1px solid #ddd",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+            }}
+          >
             <h3>Network Topology Visualization</h3>
             <div style={{ fontSize: "14px", color: "#666" }}>
-              Nodes: {nodes.length} | Connections: {nodes.reduce((acc, node) => acc + node.connections.length, 0) / 2}
+              Nodes: {nodes.length} | Connections:{" "}
+              {nodes.reduce((acc, node) => acc + node.connections.length, 0) /
+                2}
             </div>
           </div>
           <NetworkVisualization nodes={nodes} onNodesChange={setNodes} />
-
-          {yamlOutput && (
-            <div style={{ marginTop: "20px" }}>
-              <h4>Generated YAML Configuration:</h4>
-              <pre
-                style={{
-                  background: "#f5f5f5",
-                  padding: "15px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  overflow: "auto",
-                  maxHeight: "200px",
-                  border: "1px solid #ddd",
-                }}
-              >
-                {yamlOutput}
-              </pre>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -171,3 +160,4 @@ const TopologyDesigner: React.FC = () => {
 };
 
 export default TopologyDesigner;
+

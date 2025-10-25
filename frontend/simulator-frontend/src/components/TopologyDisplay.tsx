@@ -800,7 +800,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
     <div
       style={{
         width: "100%",
-        height: "500px",
+        height: "100%",
         border: "1px solid #ddd",
         borderRadius: "4px",
       }}
