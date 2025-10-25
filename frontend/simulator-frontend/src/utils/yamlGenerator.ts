@@ -12,6 +12,7 @@ export const generateYaml = (
   nodes: NodeData[],
   jitterConfig: JitterConfig,
 ): string => {
+  console.log(nodes);
   let config: YamlConfig = {};
 
   const components: NodeData[][] = findConnectedComponents(nodes);

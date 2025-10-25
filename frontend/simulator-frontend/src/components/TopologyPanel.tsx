@@ -22,21 +22,27 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
   onLoadYaml,
 }) => {
   const [newNodeId, setNewNodeId] = useState("");
-  const [newNodeProgram, setNewNodeProgram] = useState<{ value: string; label: string }>({
+  const [newNodeProgram, setNewNodeProgram] = useState<{
+    value: string;
+    label: string;
+  }>({
     value: "EchoAlgorithm",
     label: "EchoAlgorithm",
   });
   const [errorMessage, setErrorMessage] = useState("");
-  const [algorithms, setAlgorithms] = useState<{ value: string; label: string }[]>([
-    { value: "EchoAlgorithm", label: "EchoAlgorithm" },
-  ]);
+  const [algorithms, setAlgorithms] = useState<
+    { value: string; label: string }[]
+  >([{ value: "EchoAlgorithm", label: "EchoAlgorithm" }]);
   const [topologyConfig, setTopologyConfig] = useState<TopologyConfig>({
     type: "ring",
     number_of_nodes: 3,
     program: "EchoAlgorithm",
     nid_prefix: "ring-node-",
   });
-  const [topologyProgram, setTopologyProgram] = useState<{ value: string; label: string }>({
+  const [topologyProgram, setTopologyProgram] = useState<{
+    value: string;
+    label: string;
+  }>({
     value: "EchoAlgorithm",
     label: "EchoAlgorithm",
   });
@@ -51,7 +57,14 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
   // Custom option component with delete button
   const CustomOption = (props: any) => (
     <components.Option {...props}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
         <span>{props.label}</span>
         {props.data.value !== "EchoAlgorithm" && (
           <button
@@ -178,8 +191,10 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
       case "ring":
         nodeIds.forEach((id, index) => {
           const nextIndex = (index + 1) % nodeIds.length;
+          const prevIndex = (index - 1 + nodeIds.length) % nodeIds.length;
           const nextId = nodeIds[nextIndex];
-          newNodes[index].connections = [nextId];
+          const prevId = nodeIds[prevIndex];
+          newNodes[index].connections = [prevId, nextId];
         });
         break;
 
