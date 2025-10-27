@@ -5,6 +5,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Background,
+  Controls,
   NodeTypes,
   ConnectionMode,
   Handle,
@@ -772,11 +773,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
               type: "straight",
               animated: false, // We're handling animation with CSS
               style: {
-                stroke: hasBoth
-                  ? "#9c27b0"
-                  : isAnimating
-                    ? "#ff6b6b"
-                    : "#333",
+                stroke: hasBoth ? "#9c27b0" : isAnimating ? "#ff6b6b" : "#333",
                 strokeWidth: isAnimating ? 3 : 2,
                 strokeDasharray: isAnimating ? "5,5" : "0",
                 strokeDashoffset: "0",
@@ -826,6 +823,7 @@ const TopologyDisplay: React.FC<TopologyDisplayProps> = ({
         nodesFocusable={true}
         connectionMode={ConnectionMode.Loose}
       >
+        <Controls />
         <Background />
       </ReactFlow>
     </div>
