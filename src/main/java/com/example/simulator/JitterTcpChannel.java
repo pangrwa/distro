@@ -48,10 +48,10 @@ public class JitterTcpChannel {
         return;
       }
 
-      // Simulate network delay
-      if (delayMs > 0) {
-        Thread.sleep(generateRandomDelay());
-      }
+      // // Simulate network delay
+      // if (delayMs > 0) {
+      // Thread.sleep(generateRandomDelay());
+      // }
 
       Socket socket = getOrCreateConnection(recipientNodeId);
       if (socket != null && !socket.isClosed()) {
