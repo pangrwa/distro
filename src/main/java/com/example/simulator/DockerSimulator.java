@@ -11,9 +11,9 @@ public class DockerSimulator {
   private DockerManager dockerManager;
   private Map<String, String> nodeContainerIds = new HashMap<>();
 
-  public DockerSimulator(String yamlPath) throws Exception {
+  public DockerSimulator(String yamlPath, Boolean isDefault) throws Exception {
     topologyManager = new TopologyManager(yamlPath);
-    dockerManager = new DockerManager(topologyManager.getNetworkJitterConfig());
+    dockerManager = new DockerManager(topologyManager.getNetworkJitterConfig(), isDefault);
 
     System.out.println("Initialised simulator with topology from: " + yamlPath);
   }
@@ -22,9 +22,6 @@ public class DockerSimulator {
     Map<String, NodeConfig> nodes = topologyManager.getNodes();
 
     System.out.println("Starting simulation with " + nodes.size() + " nodes");
-
-    // create docker container for MessageMonitorService
-    dockerManager.createMessageMonitorServiceContainer();
 
     // create docker containers for each of these nodes
     for (Map.Entry<String, NodeConfig> entry : nodes.entrySet()) {

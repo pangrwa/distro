@@ -22,7 +22,8 @@ public class DockerManager {
   private Map<String, String> containerIds = new HashMap<>();
   private Map<String, Double> networkJitterConfig = new HashMap<>();
   private final String networkName = "simulator-network";
-  private final String messageMonitorContainerId = "message-monitor-container";
+  private final String monitorEndpoint = "host.docker.internal";
+  private Boolean isDefault = true;
 
   /**
    * Constructor with dependency injection for testing.
@@ -34,9 +35,10 @@ public class DockerManager {
     initializeNetwork();
   }
 
-  public DockerManager(Map<String, Double> networkJitterConfig) {
+  public DockerManager(Map<String, Double> networkJitterConfig, Boolean isDefault) {
     DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
     this.networkJitterConfig = networkJitterConfig;
+    this.isDefault = isDefault;
 
     DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
         .dockerHost(config.getDockerHost())
@@ -91,9 +93,10 @@ public class DockerManager {
         env.add("DELAY_MS=" + String.valueOf(networkJitterConfig.get("delay_ms")));
       }
 
-      String monitorEndpoint = getNodeIpAddress(messageMonitorContainerId);
-      // add monitor endpoint to forward message
-      env.add("MONITOR_ENDPOINT=" + monitorEndpoint);
+      // not running via CLI - using server mode
+      if (!isDefault) {
+        env.add("MONITOR_ENDPOINT=" + monitorEndpoint);
+      }
 
       // Create container
       CreateContainerResponse container = dockerClient.createContainerCmd("distro/node:latest")
@@ -121,34 +124,38 @@ public class DockerManager {
     }
   }
 
-  public String createMessageMonitorServiceContainer() {
-    try {
-      CreateContainerResponse container = dockerClient.createContainerCmd("distro/message-monitor:latest")
-          .withName(messageMonitorContainerId)
-          .withHostName(messageMonitorContainerId) // Important: hostname = nodeId for DNS resolution
-          .exec();
-
-      String containerId = container.getId();
-      containerIds.put(messageMonitorContainerId, containerId);
-
-      // brings this container into the isolated network system
-      dockerClient.connectToNetworkCmd()
-          .withNetworkId(networkId)
-          .withContainerId(containerId)
-          .exec();
-
-      // Start container
-      dockerClient.startContainerCmd(containerId).exec();
-      System.out.println(
-          "Created and started container for Message Monitor Service " + messageMonitorContainerId + " (ID: "
-              + containerId + ")");
-
-      return containerId;
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to create Message Monitor container: " + e.getMessage(), e);
-    }
-
-  }
+  // public String createMessageMonitorServiceContainer() {
+  // try {
+  // CreateContainerResponse container =
+  // dockerClient.createContainerCmd("distro/message-monitor:latest")
+  // .withName(messageMonitorContainerId)
+  // .withHostName(messageMonitorContainerId) // Important: hostname = nodeId for
+  // DNS resolution
+  // .exec();
+  //
+  // String containerId = container.getId();
+  // containerIds.put(messageMonitorContainerId, containerId);
+  //
+  // // brings this container into the isolated network system
+  // dockerClient.connectToNetworkCmd()
+  // .withNetworkId(networkId)
+  // .withContainerId(containerId)
+  // .exec();
+  //
+  // // Start container
+  // dockerClient.startContainerCmd(containerId).exec();
+  // System.out.println(
+  // "Created and started container for Message Monitor Service " +
+  // messageMonitorContainerId + " (ID: "
+  // + containerId + ")");
+  //
+  // return containerId;
+  // } catch (Exception e) {
+  // throw new RuntimeException("Failed to create Message Monitor container: " +
+  // e.getMessage(), e);
+  // }
+  //
+  // }
 
   /* Should probably prevent pausing and stoping the message monitor container */
   public void pauseNode(String nodeId) {
@@ -182,13 +189,21 @@ public class DockerManager {
       String containerId = entry.getValue();
 
       try {
-        dockerClient.stopContainerCmd(containerId).exec();
-        System.out.println("Stopped container for " + nodeId);
+        // Try to stop the container first (ignore if already stopped)
+        try {
+          dockerClient.stopContainerCmd(containerId).exec();
+          System.out.println("Stopped container for " + nodeId);
+        } catch (Exception e) {
+          System.out.println("Container " + nodeId + " already stopped or not running");
+        }
 
-        dockerClient.removeContainerCmd(containerId).exec();
+        // Force remove the container regardless of state
+        dockerClient.removeContainerCmd(containerId)
+            .withForce(true)
+            .exec();
         System.out.println("Removed container for " + nodeId);
       } catch (Exception e) {
-        // Container might already be stopped/removed
+        // Container might already be removed
         System.out.println("Error cleaning up container for " + nodeId + ": " + e.getMessage());
       }
     }

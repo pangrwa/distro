@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Plus, Download, Upload, Trash2 } from "lucide-react";
+import { Plus, Download, Upload, Trash2, X } from "lucide-react";
+import CreatableSelect from "react-select/creatable";
+import { components } from "react-select";
 import { NodeData, TopologyConfig, JitterConfig } from "../types/topology";
 
 interface TopologyPanelProps {
@@ -20,12 +22,29 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
   onLoadYaml,
 }) => {
   const [newNodeId, setNewNodeId] = useState("");
+  const [newNodeProgram, setNewNodeProgram] = useState<{
+    value: string;
+    label: string;
+  }>({
+    value: "EchoAlgorithm",
+    label: "EchoAlgorithm",
+  });
   const [errorMessage, setErrorMessage] = useState("");
+  const [algorithms, setAlgorithms] = useState<
+    { value: string; label: string }[]
+  >([{ value: "EchoAlgorithm", label: "EchoAlgorithm" }]);
   const [topologyConfig, setTopologyConfig] = useState<TopologyConfig>({
     type: "ring",
     number_of_nodes: 3,
     program: "EchoAlgorithm",
     nid_prefix: "ring-node-",
+  });
+  const [topologyProgram, setTopologyProgram] = useState<{
+    value: string;
+    label: string;
+  }>({
+    value: "EchoAlgorithm",
+    label: "EchoAlgorithm",
   });
 
   // Keep track of next node counter for each topology type
@@ -35,11 +54,83 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
     fully_connected: 0,
   });
 
+  // Custom option component with delete button
+  const CustomOption = (props: any) => (
+    <components.Option {...props}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <span>{props.label}</span>
+        {props.data.value !== "EchoAlgorithm" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveAlgorithm(props.data);
+            }}
+            style={{
+              padding: "2px 6px",
+              backgroundColor: "#ff4444",
+              color: "white",
+              border: "none",
+              borderRadius: "3px",
+              cursor: "pointer",
+              fontSize: "11px",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
+    </components.Option>
+  );
+
+  // Handle creating new algorithm options
+  const handleCreateAlgorithm = (inputValue: string) => {
+    const newOption = { value: inputValue, label: inputValue };
+    setAlgorithms([...algorithms, newOption]);
+    setNewNodeProgram(newOption);
+  };
+
+  // Handle creating new algorithm options for topology generation
+  const handleCreateTopologyAlgorithm = (inputValue: string) => {
+    const newOption = { value: inputValue, label: inputValue };
+    setAlgorithms([...algorithms, newOption]);
+    setTopologyProgram(newOption);
+    setTopologyConfig({
+      ...topologyConfig,
+      program: inputValue,
+    });
+  };
+
+  // Handle removing an algorithm option
+  const handleRemoveAlgorithm = (algo: { value: string; label: string }) => {
+    setAlgorithms(algorithms.filter((a) => a.value !== algo.value));
+    if (newNodeProgram.value === algo.value) {
+      setNewNodeProgram(algorithms[0] || { value: "", label: "" });
+    }
+    if (topologyProgram.value === algo.value) {
+      setTopologyProgram(algorithms[0] || { value: "", label: "" });
+    }
+  };
+
   const addNode = () => {
     setErrorMessage(""); // Clear previous error
 
     if (!newNodeId.trim()) {
       setErrorMessage("Node ID cannot be empty");
+      return;
+    }
+
+    if (!newNodeProgram || !newNodeProgram.value) {
+      setErrorMessage("Algorithm cannot be empty");
       return;
     }
 
@@ -50,11 +141,12 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
 
     const newNode: NodeData = {
       id: newNodeId,
-      program: "EchoAlgorithm",
+      program: newNodeProgram.value,
       connections: [],
     };
     onNodesChange([...nodes, newNode]);
     setNewNodeId("");
+    setNewNodeProgram(algorithms[0] || { value: "", label: "" });
   };
 
   const clearAllNodes = () => {
@@ -99,8 +191,10 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
       case "ring":
         nodeIds.forEach((id, index) => {
           const nextIndex = (index + 1) % nodeIds.length;
+          const prevIndex = (index - 1 + nodeIds.length) % nodeIds.length;
           const nextId = nodeIds[nextIndex];
-          newNodes[index].connections = [nextId];
+          const prevId = nodeIds[prevIndex];
+          newNodes[index].connections = [prevId, nextId];
         });
         break;
 
@@ -190,21 +284,46 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
           </div>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label>Program:</label>
-            <select
-              value={topologyConfig.program}
-              onChange={(e) =>
-                setTopologyConfig({
-                  ...topologyConfig,
-                  program: e.target.value,
-                })
-              }
-            >
-              <option value="EchoAlgorithm">Echo Algorithm</option>
-              <option value="broadcast_algorithm">Broadcast Algorithm</option>
-              <option value="leader_election">Leader Election</option>
-              <option value="consensus_algorithm">Consensus Algorithm</option>
-            </select>
+            <label style={{ whiteSpace: "nowrap" }}>Program:</label>
+            <CreatableSelect
+              value={topologyProgram}
+              onChange={(option) => {
+                if (option) {
+                  setTopologyProgram(option);
+                  setTopologyConfig({
+                    ...topologyConfig,
+                    program: option.value,
+                  });
+                }
+              }}
+              onCreateOption={handleCreateTopologyAlgorithm}
+              options={algorithms}
+              isClearable={false}
+              placeholder="Select or create algorithm"
+              components={{ Option: CustomOption }}
+              styles={{
+                container: (base) => ({
+                  ...base,
+                  flex: 1,
+                  minWidth: "100px",
+                }),
+                control: (base) => ({
+                  ...base,
+                  minHeight: "32px",
+                  height: "32px",
+                  fontSize: "14px",
+                }),
+                option: (base) => ({
+                  ...base,
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                }),
+                menuList: (base) => ({
+                  ...base,
+                  maxHeight: "150px",
+                }),
+              }}
+            />
           </div>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -248,30 +367,73 @@ const TopologyPanel: React.FC<TopologyPanelProps> = ({
       {/* Manual Node Addition */}
       <div style={{ marginBottom: "20px" }}>
         <h4>Add Individual Node</h4>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <input
-              type="text"
-              placeholder="Node ID"
-              value={newNodeId}
-              onChange={(e) => {
-                setNewNodeId(e.target.value);
-                setErrorMessage(""); // Clear error when typing
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <input
+            type="text"
+            placeholder="Node ID"
+            value={newNodeId}
+            onChange={(e) => {
+              setNewNodeId(e.target.value);
+              setErrorMessage(""); // Clear error when typing
+            }}
+            style={{ width: "100%" }}
+          />
+          <div style={{ display: "flex", gap: "8px" }}>
+            <CreatableSelect
+              value={newNodeProgram}
+              onChange={(option) => {
+                if (option) {
+                  setNewNodeProgram(option);
+                  setErrorMessage("");
+                }
+              }}
+              onCreateOption={handleCreateAlgorithm}
+              options={algorithms}
+              isClearable={false}
+              placeholder="Select or create algorithm"
+              components={{ Option: CustomOption }}
+              styles={{
+                container: (base) => ({
+                  ...base,
+                  flex: 1,
+                  minWidth: "100px",
+                }),
+                control: (base) => ({
+                  ...base,
+                  minHeight: "32px",
+                  height: "32px",
+                  fontSize: "14px",
+                }),
+                option: (base) => ({
+                  ...base,
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                }),
+                menuList: (base) => ({
+                  ...base,
+                  maxHeight: "150px",
+                }),
               }}
             />
             <button
               onClick={addNode}
-              style={{ display: "flex", alignItems: "center", gap: "5px" }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "6px 12px",
+                whiteSpace: "nowrap",
+              }}
             >
               <Plus size={16} />
-              Add Node
+              Add
             </button>
           </div>
           {errorMessage && (
             <div
               style={{
                 color: "#ff4444",
-                fontSize: "14px",
+                fontSize: "12px",
                 fontWeight: "bold",
               }}
             >

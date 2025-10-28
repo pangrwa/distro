@@ -1,5 +1,5 @@
 # docker/Dockerfile.controller
-FROM openjdk:11-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 
 # Install Docker CLI
 RUN apt-get update && apt-get install -y \

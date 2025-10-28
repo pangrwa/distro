@@ -6,6 +6,7 @@ import java.net.*;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import com.example.util.AnsiColor;
 import com.example.api.NodeProgram;
 
@@ -38,7 +39,7 @@ public class JitterTcpChannel {
     acceptorThread.start();
   }
 
-  public void sendMessage(byte[] message, String recipientNodeId) {
+  public synchronized void sendMessage(byte[] message, String recipientNodeId) {
     try {
       // Simulate message dropping
       if (shouldDropMessage()) {
@@ -47,10 +48,10 @@ public class JitterTcpChannel {
         return;
       }
 
-      // Simulate network delay
-      if (delayMs > 0) {
-        Thread.sleep(delayMs);
-      }
+      // // Simulate network delay
+      // if (delayMs > 0) {
+      // Thread.sleep(generateRandomDelay());
+      // }
 
       Socket socket = getOrCreateConnection(recipientNodeId);
       if (socket != null && !socket.isClosed()) {
@@ -135,6 +136,25 @@ public class JitterTcpChannel {
     return ThreadLocalRandom.current().nextDouble() < dropRate;
   }
 
+  /**
+   * Generates a random delay based on a normal distribution centered at delayMs.
+   * The range is clamped to [max(0, delayMs - 500ms), delayMs + 500ms].
+   *
+   * @return delay in milliseconds
+   */
+  private long generateRandomDelay() {
+    // Standard deviation of 250ms (covers roughly 95% of values within ±500ms)
+    double stdDev = 250.0;
+    double randomValue = ThreadLocalRandom.current().nextGaussian(delayMs, stdDev);
+
+    // Clamp to the range [max(0, delayMs - 500), delayMs + 500]
+    long minDelay = Math.max(0, delayMs - 500);
+    long maxDelay = delayMs + 500;
+    long clampedDelay = Math.max(minDelay, Math.min(maxDelay, Math.round(randomValue)));
+
+    return clampedDelay;
+  }
+
   private final java.util.concurrent.BlockingQueue<MessageData> incomingMessages = new java.util.concurrent.LinkedBlockingQueue<>();
 
   private void queueIncomingMessage(MessageData messageData) {
@@ -146,7 +166,7 @@ public class JitterTcpChannel {
 
     // Simulate network delay
     if (delayMs > 0) {
-      Thread.sleep(delayMs);
+      Thread.sleep(generateRandomDelay());
     }
 
     String formattedMessage = nodeProgram.decodeMessage(messageData.getData());

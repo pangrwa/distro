@@ -95,6 +95,7 @@ public class TopologyManager {
       String current = nodeIds.get(i);
       String next = nodeIds.get((i + 1) % nodeIds.size());
       connections.add(new Connection(current, next));
+      connections.add(new Connection(next, current));
     }
   }
 
@@ -103,6 +104,7 @@ public class TopologyManager {
       String current = nodeIds.get(i);
       String next = nodeIds.get(i + 1);
       connections.add(new Connection(current, next));
+      connections.add(new Connection(next, current));
     }
   }
 
@@ -112,6 +114,7 @@ public class TopologyManager {
         String node1 = nodeIds.get(i);
         String node2 = nodeIds.get(j);
         connections.add(new Connection(node1, node2));
+        connections.add(new Connection(node2, node1));
       }
     }
   }
@@ -168,10 +171,9 @@ public class TopologyManager {
       String from = connection.getFromNode();
       String to = connection.getToNode();
 
-      // Add bidirectional connections
+      // Add unidirectional connection
       if (nodes.containsKey(from) && nodes.containsKey(to)) {
         peerLists.get(from).add(to);
-        peerLists.get(to).add(from);
       }
     }
 
