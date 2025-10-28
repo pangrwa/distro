@@ -39,7 +39,7 @@ public class JitterTcpChannel {
     acceptorThread.start();
   }
 
-  public void sendMessage(byte[] message, String recipientNodeId) {
+  public synchronized void sendMessage(byte[] message, String recipientNodeId) {
     try {
       // Simulate message dropping
       if (shouldDropMessage()) {
